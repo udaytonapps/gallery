@@ -69,10 +69,29 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' ) {
 $OUTPUT->header();
 ?>
 <style type="text/css">
+    .gallery-title {
+        margin-top: 0;
+    }
+    #gallery {
+        padding: .5vw;
+        display: -ms-flexbox;
+        -ms-flex-wrap: wrap;
+        -ms-flex-direction: column;
+        -webkit-flex-flow: row wrap;
+        flex-flow: row wrap;
+        display: -webkit-box;
+        display: flex;
+    }
+    .gallery-column {
+        -webkit-box-flex: auto;
+        -ms-flex: auto;
+        flex: auto;
+        width: 200px;
+        margin: .5vw;
+    }
     .gallery-image {
         width: 100%;
         height: auto;
-        margin: 8px 0;
         border: 1px solid #ccc;
     }
     .gallery-image:hover {
@@ -109,7 +128,9 @@ $stmt->execute(array(":CI" => $CONTEXT->id));
 <?php $OUTPUT->flashMessages(); ?>
 
 <div class="container-fluid">
-    <div class="row">
+    <h3 class="gallery-title"><?= $CONTEXT->title ?>'s Photo Gallery</h3>
+    <p>Use the "Add Photo" button above to add a photo to the class gallery.</p>
+    <div id="gallery">
 
 <?php
 $count = 0;
@@ -131,7 +152,7 @@ while ( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) {
     $namestmt->execute(array(":user_id" => $photoInfo["user_id"]));
     $name = $namestmt->fetch(PDO::FETCH_ASSOC);
 
-    echo '<div class="col-sm-3">
+    echo '<div class="gallery-column">
             <a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#image'.$id.'" class="image-link">
                 <img class="gallery-image" src="'.addSession($serve).'">
             </a>
@@ -178,7 +199,7 @@ if ( $count == 0 ) echo "<p><em>No photos have been added yet.</em></p>\n";
                         <input name="uploaded_file" type="file" id="uploaded_file">
                     </div>
                     <div class="form-group">
-                        <label for="photo-description">Photo Description</label>
+                        <label for="photo-description">Photo Description <span class="text-danger">*</span></label>
                         <textarea id="photo-description" name="photo-description" class="form-control" rows="5" required></textarea>
                     </div>
                     <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo(BlobUtil::maxUpload());?>000000" />
