@@ -69,9 +69,6 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' ) {
 $OUTPUT->header();
 ?>
 <style type="text/css">
-    .gallery-title {
-        margin-top: 0;
-    }
     #gallery {
         padding: .5vw;
         display: -ms-flexbox;
@@ -128,8 +125,7 @@ $stmt->execute(array(":LI" => $LINK->id));
 <?php $OUTPUT->flashMessages(); ?>
 
 <div class="container-fluid">
-    <h3 class="gallery-title"><?= $CONTEXT->title ?>'s Photo Gallery</h3>
-    <p>Use the "Add Photo" button above to add a photo to the class gallery.</p>
+    <p>Use the "Add Photo" button above to add a photo to this gallery.</p>
     <div id="gallery">
 
 <?php
