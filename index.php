@@ -69,9 +69,6 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' ) {
 $OUTPUT->header();
 ?>
 <style type="text/css">
-    .gallery-title {
-        margin-top: 0;
-    }
     #gallery {
         padding: .5vw;
         display: -ms-flexbox;
@@ -109,8 +106,8 @@ $OUTPUT->bodyStart();
 
 // TODO: Make this a method in BlobUtil
 $stmt = $PDOX->prepare("SELECT file_id, file_name, created_at FROM {$p}blob_file
-        WHERE context_id = :CI ORDER BY created_at desc");
-$stmt->execute(array(":CI" => $CONTEXT->id));
+        WHERE link_id = :LI ORDER BY created_at desc");
+$stmt->execute(array(":LI" => $LINK->id));
 
 ?>
 
@@ -128,8 +125,7 @@ $stmt->execute(array(":CI" => $CONTEXT->id));
 <?php $OUTPUT->flashMessages(); ?>
 
 <div class="container-fluid">
-    <h3 class="gallery-title"><?= $CONTEXT->title ?>'s Photo Gallery</h3>
-    <p>Use the "Add Photo" button above to add a photo to the class gallery.</p>
+    <p>Use the "Add Photo" button above to add a photo to this gallery.</p>
     <div id="gallery">
 
 <?php
@@ -158,7 +154,7 @@ while ( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) {
             </a>
           </div>
           <div id="image'.$id.'" class="modal fade" role="dialog">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <!-- Modal content-->
                 <div class="modal-content">
                 <div class="modal-header">
@@ -170,8 +166,12 @@ while ( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) {
                     echo '
                 </div>
                 <div class="modal-body">
-                    <img class="image-large" src="'.addSession($serve).'">
                     <p>'.$photoInfo["description"].'</p>
+                    <img class="image-large" src="'.addSession($serve).'">
+                    <ul class="pager">
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
+                    </ul>
                 </div>
                 </div>
             </div>
@@ -199,8 +199,8 @@ if ( $count == 0 ) echo "<p><em>No photos have been added yet.</em></p>\n";
                         <input name="uploaded_file" type="file" id="uploaded_file">
                     </div>
                     <div class="form-group">
-                        <label for="photo-description">Photo Description <span class="text-danger">*</span></label>
-                        <textarea id="photo-description" name="photo-description" class="form-control" rows="5" required></textarea>
+                        <label for="photo-description">Photo Description</label>
+                        <textarea id="photo-description" name="photo-description" class="form-control" rows="5"></textarea>
                     </div>
                     <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo(BlobUtil::maxUpload());?>000000" />
                 </div>
@@ -214,4 +214,25 @@ if ( $count == 0 ) echo "<p><em>No photos have been added yet.</em></p>\n";
 </div>
 
 <?php
-$OUTPUT->footer();
+$OUTPUT->footerStart();
+?>
+    <script type="text/javascript">
+        function gotoprev(current_index) {
+            var links = document.getElementsByClassName("image-link");
+            current_index--;
+            if (current_index < 0) {
+                current_index = links.length -1;
+            }
+            links[current_index].click();
+        }
+        function gotonext(current_index) {
+            var links = document.getElementsByClassName("image-link");
+            current_index++;
+            if (current_index >= links.length) {
+                current_index = 0;
+            }
+            links[current_index].click();
+        }
+    </script>
+<?php
+$OUTPUT->footerEnd();
