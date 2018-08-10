@@ -12,7 +12,15 @@ $DATABASE_INSTALL = array(
     user_id     INTEGER NOT NULL,
     description TEXT NULL,
     blob_id     INTEGER NOT NULL,
+    approved    BOOL DEFAULT 0,
     
     PRIMARY KEY(photo_id)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8"),
+    array( "{$CFG->dbprefix}gallery_main",
+        "create table {$CFG->dbprefix}gallery_main (
+    link_id     INTEGER NOT NULL,
+    approval    BOOL DEFAULT 0,
+        
+    PRIMARY KEY(link_id)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8")
 );
