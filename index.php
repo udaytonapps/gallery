@@ -17,6 +17,15 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' && count($_POST) == 0 ) {
 // Sanity checks
 $LAUNCH = LTIX::requireData(array(LTIX::CONTEXT, LTIX::LINK));
 
+$settingsStmt = $PDOX->prepare("SELECT approval FROM {$p}gallery_main WHERE link_id = :linkId");
+$settingsStmt->execute(array(":linkId" => $LINK->id));
+$settings = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+
+$requireApproval = 0;
+if ($settings) {
+    $requireApproval = $settings["approval"];
+}
+
 // Other times, we see an error indication on bad upload that does not delete all the $_POST
 if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 1) {
     $_SESSION['error'] = 'Error: Maximum size of '.BlobUtil::maxUpload().'MB exceeded.';
@@ -49,9 +58,17 @@ if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 0)
     if (isset($_POST["photo-description"])) {
         $description = $_POST["photo-description"];
     }
+
+    $approved = 1;
+    var_dump($requireApproval);
+    var_dump($USER->instructor);
+    if ($requireApproval == 1 && !$USER->instructor) {
+        $approved = 0;
+    }
+
     // Save success so add info to gallery database
-    $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id) values (:userId, :description, :blobId)");
-    $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id));
+    $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved) values (:userId, :description, :blobId, :approved)");
+    $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
 
     $_SESSION['success'] = 'Photo added successfully.';
     header( 'Location: '.addSession('index.php') ) ;
@@ -105,10 +122,28 @@ $OUTPUT->header();
 $OUTPUT->bodyStart();
 
 // TODO: Make this a method in BlobUtil
-$stmt = $PDOX->prepare("SELECT file_id, file_name, created_at FROM {$p}blob_file
-        WHERE link_id = :LI ORDER BY created_at desc");
-$stmt->execute(array(":LI" => $LINK->id));
+$allPhotos = $PDOX->prepare("SELECT file_id, file_name, created_at FROM {$p}blob_file
+        WHERE link_id = :LI");
+$allPhotos->execute(array(":LI" => $LINK->id));
 
+$sortedPhotos = $PDOX->prepare("SELECT file_id, file_name, created_at FROM {$p}blob_file
+        WHERE link_id = :LI ORDER BY created_at desc");
+$sortedPhotos->execute(array(":LI" => $LINK->id));
+
+$countPending = 0;
+$currentUserPendingCount = 0;
+while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
+    $approvedStmt = $PDOX->prepare("SELECT user_id, approved FROM {$p}photo_gallery WHERE blob_id = :blobId AND approved = :approved");
+    $approvedStmt->execute(array(":blobId" => $photo["file_id"], ":approved" => 0));
+    $approveInfo = $approvedStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($approveInfo["approved"] == "0") {
+        $countPending++;
+    }
+    if ($approveInfo["user_id"] == $USER->id) {
+        $currentUserPendingCount++;
+    }
+}
 ?>
 
 <nav class="navbar navbar-default">
@@ -118,6 +153,11 @@ $stmt->execute(array(":LI" => $LINK->id));
         </div>
         <ul class="nav navbar-nav">
             <li><a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#uploadModal"><span class="fa fa-plus" aria-hidden="true"></span> Add Photo</a></li>
+            <?php
+            if ($requireApproval && $USER->instructor) {
+                echo '<li><a href="pending.php">Pending Photos <span class="label label-danger">'.$countPending.'</span></a></li>';
+            }
+            ?>
         </ul>
     </div>
 </nav>
@@ -126,20 +166,29 @@ $stmt->execute(array(":LI" => $LINK->id));
 
 <div class="container-fluid">
     <p>Use the "Add Photo" button above to add a photo to this gallery.</p>
+    <?php
+    if ($requireApproval && $currentUserPendingCount > 0) {
+        echo '<p class="alert alert-danger">You have <strong>'.$currentUserPendingCount.'</strong> submitted photo(s) pending approval.</p>';
+    }
+    ?>
     <div id="gallery">
 
 <?php
 $count = 0;
-while ( $row = $stmt->fetch(PDO::FETCH_ASSOC) ) {
+while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
     $id = $row['file_id'];
     $fn = $row['file_name'];
     $date = $row['created_at'];
 
     $serve = BlobUtil::getAccessUrlForBlob($id);
 
-    $infostmt = $PDOX->prepare("SELECT user_id, description FROM {$p}photo_gallery WHERE blob_id = :blobId");
+    $infostmt = $PDOX->prepare("SELECT user_id, description, approved FROM {$p}photo_gallery WHERE blob_id = :blobId");
     $infostmt->execute(array(":blobId" => $id));
     $photoInfo = $infostmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($requireApproval && $photoInfo["approved"] == "0") {
+        continue;
+    }
 
     $photoDate = new DateTime($date);
     $formattedDate = $photoDate->format("m-d-y") . " at " . $photoDate->format("h:i A");
