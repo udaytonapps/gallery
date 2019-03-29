@@ -36,6 +36,7 @@ if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 1) {
 if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 0)
 {
     $fdes = $_FILES['uploaded_file'];
+
     $filename = isset($fdes['name']) ? basename($fdes['name']) : false;
 
     // Sanity-check the file
@@ -60,15 +61,13 @@ if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 0)
     }
 
     $approved = 1;
-    var_dump($requireApproval);
-    var_dump($USER->instructor);
     if ($requireApproval == 1 && !$USER->instructor) {
         $approved = 0;
     }
 
     // Save success so add info to gallery database
-    $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved) values (:userId, :description, :blobId, :approved)");
-    $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
+    $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved, degrees) values (:userId, :description, :blobId, :approved, :degrees)");
+    $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved, ":degrees" => 0));
 
     $_SESSION['success'] = 'Photo added successfully.';
     header( 'Location: '.addSession('index.php') ) ;
@@ -97,7 +96,7 @@ $OUTPUT->header();
         display: flex;
     }
     .gallery-column {
-        -webkit-box-flex: auto;
+        -webkit-box-flex: inherit;
         -ms-flex: auto;
         flex: auto;
         width: 200px;
@@ -107,6 +106,7 @@ $OUTPUT->header();
         width: 100%;
         height: auto;
         border: 1px solid #ccc;
+        transform: rotate(<?=$degrees?>deg);
     }
     .gallery-image:hover {
         -webkit-box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
@@ -116,6 +116,9 @@ $OUTPUT->header();
     .image-large {
         width: 100%;
         height: auto;
+    }
+    .editPhoto {
+        margin-left: 2%;
     }
 </style>
 <?php
@@ -181,10 +184,10 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
     $date = $row['created_at'];
 
     $serve = BlobUtil::getAccessUrlForBlob($id);
-
-    $infostmt = $PDOX->prepare("SELECT user_id, description, approved FROM {$p}photo_gallery WHERE blob_id = :blobId");
+    $infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery WHERE blob_id = :blobId");
     $infostmt->execute(array(":blobId" => $id));
     $photoInfo = $infostmt->fetch(PDO::FETCH_ASSOC);
+    $degrees = $photoInfo['degrees'];
 
     if ($requireApproval && $photoInfo["approved"] == "0") {
         continue;
@@ -199,7 +202,7 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
 
     echo '<div class="gallery-column">
             <a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#image'.$id.'" class="image-link">
-                <img class="gallery-image" src="'.addSession($serve).'">
+                <img class="gallery-image" style="transform: rotate('.$degrees.'deg);" src="'.addSession($serve).'">
             </a>
           </div>
           <div id="image'.$id.'" class="modal fade" role="dialog">
@@ -210,13 +213,16 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4>Photo added by '.$name["displayname"].'<br /><small>'.$formattedDate.'</small></h4>';
                     if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
-                        echo '<a href="photo-delete.php?id='.$id.'"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>';
+                        ?>
+                        <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
+                        <a href="photo-edit.php?id=<?=$id?>" class="editPhoto"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                    <?php
                     }
                     echo '
                 </div>
                 <div class="modal-body">
                     <p>'.$photoInfo["description"].'</p>
-                    <img class="image-large" src="'.addSession($serve).'">
+                    <img class="image-large" style="transform: rotate('.$degrees.'deg)" src="'.addSession($serve).'">
                     <ul class="pager">
                         <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
                         <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
@@ -240,6 +246,7 @@ if ( $count == 0 ) echo "<p><em>No photos have been added yet.</em></p>\n";
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title">Upload a Photo<br /><small>Maximum size: <?php echo(BlobUtil::maxUpload());?>MB</small></h4>
+                <h5 class="sideNote"><i>Photos can be edited after upload.</i></h5>
             </div>
             <form name="myform" enctype="multipart/form-data" method="post" action="<?php addSession('index.php');?>">
                 <div class="modal-body">
