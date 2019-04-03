@@ -98,27 +98,35 @@ $OUTPUT->header();
     .gallery-column {
         -webkit-box-flex: inherit;
         -ms-flex: auto;
-        flex: auto;
         width: 200px;
         margin: .5vw;
     }
     .gallery-image {
         width: 100%;
-        height: auto;
-        border: 1px solid #ccc;
-        transform: rotate(<?=$degrees?>deg);
+        height: 100%;
+        object-fit: scale-down;
+        vertical-align: bottom;
     }
     .gallery-image:hover {
         -webkit-box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
         box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
-        border: 1px solid #999;
     }
     .image-large {
         width: 100%;
-        height: auto;
+        height: 100%;
+        object-fit: scale-down;
     }
     .editPhoto {
         margin-left: 2%;
+    }
+    .image-container {
+        width: 200px;
+        height: 200px;
+    }
+    .image-container2 {
+        width: 700px;
+        height: 700px;
+        margin-left: 9%;
     }
 </style>
 <?php
@@ -202,7 +210,10 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
 
     echo '<div class="gallery-column">
             <a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#image'.$id.'" class="image-link">
+            <div class="image-container">
                 <img class="gallery-image" style="transform: rotate('.$degrees.'deg);" src="'.addSession($serve).'">
+            </div>
+                
             </a>
           </div>
           <div id="image'.$id.'" class="modal fade" role="dialog">
@@ -222,7 +233,9 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                 </div>
                 <div class="modal-body">
                     <p>'.$photoInfo["description"].'</p>
-                    <img class="image-large" style="transform: rotate('.$degrees.'deg)" src="'.addSession($serve).'">
+                    <div class="image-container2">
+                        <img style="transform: rotate('.$degrees.'deg)" class="image-large" src="'.addSession($serve).'">
+                    </div>
                     <ul class="pager">
                         <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
                         <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>

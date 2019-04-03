@@ -32,15 +32,26 @@ if(isset($_GET['deg'])) {
     $degrees = $_GET['deg'];
 }
 ?>
+<link rel="stylesheet" href="node_modules/croppie/croppie.css">
+<script src="node_modules/croppie/croppie.js"></script>
 <style type="text/css">
     .gallery-image {
         width: 100%;
-        height: auto;
-        border: 1px solid #ccc;
+        height: 100%;
+        object-fit: scale-down;
+        vertical-align: bottom;
         transform: rotate(<?=$degrees?>deg);
+    }
+    .image-container {
+        width: 1000px;
+        height: 1000px;
+        margin-left: 4%;
     }
     .editOptions {
         margin-bottom: 2%;
+        margin-top: 2%;
+    }
+    .save {
         margin-top: 2%;
     }
 </style>
@@ -53,7 +64,7 @@ $url = 'photo-edit.php?id=' . $_GET['id'];
 
 $isRotate = isset($_POST['isRotate']) ? 1 : 0;
 $degreesSub = isset($_POST['degrees']) ? $_POST['degrees'] : 0;
-
+$description = isset($_POST['photo-description']) ? $_POST['photo-description'] : $gallery['description'];
 if ( $_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($isRotate == 1) {
 
@@ -67,9 +78,10 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST') {
         header('Location: ' . addSession($url2));
     } else {
         // Update Gallery Database
-        $updatePhoto = $PDOX->prepare("UPDATE {$p}photo_gallery SET degrees=:degrees WHERE blob_id = :blobId");
+        $updatePhoto = $PDOX->prepare("UPDATE {$p}photo_gallery SET degrees=:degrees, description=:description WHERE blob_id = :blobId");
         $updatePhoto->execute(array(
             ":degrees" => $degreesSub,
+            ":description" => $description,
             ":blobId" => $photo['file_id']
         ));
 
@@ -98,12 +110,34 @@ $OUTPUT->bodyStart();
 </div>
 
 <div class="container-fluid">
-    <img class="gallery-image" src="<?=addSession($serve)?>">
+    <div class="image-container">
+        <img class="gallery-image" src="<?=addSession($serve)?>">
+    </div>
+    <script>
+        var url = "<?php echo addSession($serve) ?>";
+        var elem = document.getElementById('gallery-image');
+        var crop = new Croppie(elem, {
+            viewport: { width: 100, height: 100 },
+            boundary: { width: 300, height: 300 },
+            showZoomer: false,
+            enableResize: true,
+            enableOrientation: true,
+            mouseWheelZoom: 'ctrl'
+        });
+        crop.bind({
+            url: url,
+        });
+        //on button click
+        crop.result('blob').then(function(blob) {
+
+        });
+    </script>
     <div class="editOptions">
         <form method="post">
-            <input class="photo-description" id="photo-description" value="<?=$photo['description']?>" type="hidden">
-            <input class="degrees" id="degrees" name = "degrees" value="<?=$degrees?>" type="number" style="display: none">
-            <button class="btn btn-success" type="submit">Save</button>
+            <label for="photo-description">Photo Description</label>
+            <textarea class="form-control" id="photo-description" name="photo-description" rows="5"><?=$gallery['description']?></textarea>
+            <input class="degrees" id="degrees" name="degrees" value="<?=$degrees?>" type="number" style="display: none">
+            <button class="btn btn-success save" type="submit">Save</button>
         </form>
     </div>
 </div>
