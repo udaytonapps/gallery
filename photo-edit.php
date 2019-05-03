@@ -275,6 +275,7 @@ $OUTPUT->footerStart();
                 var crop = $('#pic').croppie({
                     viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
                     boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                    enforceBoundary: false,
                     showZoomer: false,
                     enableResize: true,
                     enableOrientation: true
@@ -305,6 +306,7 @@ $OUTPUT->footerStart();
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
                         boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                        enforceBoundary: false,
                         showZoomer: false,
                         enableResize: true,
                         enableOrientation: true
@@ -337,6 +339,7 @@ $OUTPUT->footerStart();
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
                         boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                        enforceBoundary: false,
                         showZoomer: false,
                         enableResize: true,
                         enableOrientation: true
