@@ -13,7 +13,6 @@ $DATABASE_INSTALL = array(
     description TEXT NULL,
     blob_id     INTEGER NOT NULL,
     approved    BOOL DEFAULT 0,
-    degrees     INTEGER NOT NULL,
     
     PRIMARY KEY(photo_id)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8"),
