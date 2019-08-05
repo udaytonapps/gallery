@@ -110,9 +110,8 @@ $OUTPUT->header();
         box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
     }
     .image-large {
-        width: 100%;
-        height: 100%;
-        object-fit: scale-down;
+        max-height: 500px;
+        width: auto;
     }
     .editPhoto {
         margin-left: 2%;
@@ -122,9 +121,7 @@ $OUTPUT->header();
         height: 200px;
     }
     .image-container2 {
-        width: 700px;
-        height: 700px;
-        margin-left: 9%;
+        text-align: center;
     }
 </style>
 <?php
