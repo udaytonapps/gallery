@@ -48,44 +48,6 @@ $blobST = $PDOX->prepare("SELECT * FROM {$p}blob_blob WHERE blob_id = :blobId");
 $blobST->execute(array(":blobId" => $photo['blob_id']));
 $blob = $blobST->fetch(PDO::FETCH_ASSOC);
 
-?>
-    <style type="text/css">
-        .gallery-image {
-            width: 100%;
-            height: 100%;
-            object-fit: scale-down;
-            vertical-align: bottom;
-        }
-        .image-container {
-            width: 1000px;
-            height: 1000px;
-            margin-left: 4%;
-        }
-        .editOptions {
-            margin-bottom: 2%;
-            margin-top: 2%;
-        }
-        .col-sm-1 {
-            margin-bottom: 2%;
-        }
-        .save {
-            margin-top: 2%;
-        }
-        .instructions-edit {
-            font-family: "Lato", sans-serif;
-            word-wrap: break-spaces;
-            color: #555555;
-
-        }
-        .pageInstructions {
-            width: 85%;
-            margin-left: 8%;
-            text-align: center;
-        }
-
-    </style>
-
-<?php
 //Resize unnecessarily large images so they actually fit on the page
 $serve = BlobUtil::getAccessUrlForBlob($photo['file_id']);
 $im = imagecreatefromstring($blob['content']);
@@ -190,41 +152,31 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST') {
 $OUTPUT->flashMessages();
 $OUTPUT->bodyStart();
 ?>
-    <nav class="navbar navbar-default">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo Gallery</a>
-            </div>
-        </div>
-    </nav>
-
     <div class="pageInstructions">
-        <h3 class="instructions-edit">Click the buttons to rotate the image. Drag the edges to crop the photo. Add a description in the box at the bottom of the page. When finished, click the 'save' button.</h3>
+        <h3>Edit Photo</h3>
+        <p class="instructions-edit">Click the buttons to rotate the image. Drag the edges to crop the photo. Add a description in the box at the bottom of the page. When finished, click the 'save' button.</p>
     </div>
 
-    <div class="container-fluid">
-        <div class="editOptions">
-            <div class="col-sm-1">
-                <button class="btn btn-primary" id="rotateLeft" data-deg="90"> Rotate Left</button>
-            </div>
-            <div class="col-sm-1" style="margin-left: 2%">
-                <button class="btn btn-primary" id="rotateRight" data-deg="-90"> Rotate Right</button>
-            </div>
-        </div>
+    <div class="container">
+        <div id="pic"></div>
     </div>
-<div class="container">
-    <div id="pic"></div>
-</div>
 
-    <div class="container-fluid">
-        <div class="editOptions">
-            <form method="post" id="saveImage">
-                <input type="hidden" id="saveResult" name="saveResult">
+    <div class="editOptions">
+        <p>
+            <button role="button" class="btn btn-primary" id="rotateLeft" data-deg="90"> Rotate Left</button>
+            <button role="button" class="btn btn-primary" id="rotateRight" data-deg="-90"> Rotate Right</button>
+        </p>
+        <form method="post" id="saveImage" class="form">
+            <input type="hidden" id="saveResult" name="saveResult">
+            <div class="form-group">
                 <label for="photo-description">Photo Description</label>
                 <textarea class="form-control" id="photo-description" name="photo-description" rows="5"><?=$gallery['description']?></textarea>
-                <button class="btn btn-success save" id="save">Save</button>
-            </form>
-        </div>
+            </div>
+            <p>
+                <button class="btn btn-success save" id="save">Save</button> <a href="index.php">Cancel</a>
+            </p>
+        </form>
+    </div>
     </div>
 <?php
 
@@ -274,7 +226,7 @@ $OUTPUT->footerStart();
             if(orientation === 1) {
                 var crop = $('#pic').croppie({
                     viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
-                    boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                    boundary: { width: <?php echo $width+10 ?>, height: <?php echo $height+10 ?> },
                     enforceBoundary: false,
                     showZoomer: false,
                     enableResize: true,
@@ -291,7 +243,7 @@ $OUTPUT->footerStart();
                 if(orientation === 8 || orientation === 6) {
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $height ?>, height: <?php echo $width ?> },
-                        boundary: { width: <?php echo $height ?>, height: <?php echo $width ?> },
+                        boundary: { width: <?php echo $height+10 ?>, height: <?php echo $width+10 ?> },
                         enforceBoundary: false,
                         enableResize: true,
                         showZoomer: false,
@@ -305,7 +257,7 @@ $OUTPUT->footerStart();
                 } else {
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
-                        boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                        boundary: { width: <?php echo $width+10 ?>, height: <?php echo $height+10 ?> },
                         enforceBoundary: false,
                         showZoomer: false,
                         enableResize: true,
@@ -324,7 +276,7 @@ $OUTPUT->footerStart();
                 if(orientation === 8 || orientation === 6) {
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $height ?>, height: <?php echo $width ?> },
-                        boundary: { width: <?php echo $height ?>, height: <?php echo $width ?> },
+                        boundary: { width: <?php echo $height+10 ?>, height: <?php echo $width+10 ?> },
                         enforceBoundary: false,
                         showZoomer: false,
                         enableResize: true,
@@ -338,7 +290,7 @@ $OUTPUT->footerStart();
                 } else {
                     var crop = $('#pic').croppie({
                         viewport: { width: <?php echo $width ?>, height: <?php echo $height ?> },
-                        boundary: { width: <?php echo $width ?>, height: <?php echo $height ?> },
+                        boundary: { width: <?php echo $width+10 ?>, height: <?php echo $height+10 ?> },
                         enforceBoundary: false,
                         showZoomer: false,
                         enableResize: true,
