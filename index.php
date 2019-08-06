@@ -111,7 +111,9 @@ $OUTPUT->header();
     }
     .image-large {
         max-height: 500px;
+        max-width: 100%;
         width: auto;
+        height: auto;
     }
     .editPhoto {
         margin-left: 2%;
@@ -216,24 +218,28 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                 <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4>Photo added by '.$name["displayname"].'<br /><small>'.$formattedDate.'</small></h4>';
+                    <h4>Photo added by '.$name["displayname"].'<br /><small>'.$formattedDate.'</small></h4>
+                    <div style="display:flex">';
                     if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
                         ?>
+                        <div style="flex-grow: 1">
                         <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
                         <a href="photo-edit.php?id=<?=$id?>" class="editPhoto"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                        </div>
                     <?php
                     }
                     echo '
+                    <ul class="pager" style="margin: 0;">
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
+                    </ul>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <p>'.$photoInfo["description"].'</p>
                     <div class="image-container2">
                         <img class="image-large" src="'.addSession($serve).'">
                     </div>
-                    <ul class="pager">
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
-                    </ul>
                 </div>
                 </div>
             </div>

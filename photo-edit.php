@@ -55,33 +55,15 @@ $width = imagesx($im);
 $height = imagesy($im);
 $origWidth = $width;
 $origHeight = $height;
-if($width > 600 && $width <= 1200 && $width>$height || $height > 600 && $height <= 1200 && $height>$width) {
-    $width = $width/2;
-    $height = $height/2;
-} else if($width > 1200 && $width <= 1800 && $width>$height || $height > 1200 && $height <= 1800 && $height>$width) {
-    $width = $width/3;
-    $height = $height/3;
-} else if($width > 1800 && $width <= 2400 && $width>$height || $height > 1800 && $height <= 2400 && $height>$width) {
-    $width = $width/4;
-    $height = $height/4;
-} else if($width > 2400 && $width <= 3000 && $width>$height || $height > 2400 && $height <= 3000 && $height>$width) {
-    $width = $width/5;
-    $height = $height/5;
-} else if($width > 3000 && $width <= 3600 && $width>$height || $height > 3000 && $height <= 3600 && $height>$width) {
-    $width = $width/6;
-    $height = $height/6;
-} else if($width > 3600 && $width <= 4200 && $width>$height || $height > 3600 && $height <= 4200 && $height>$width) {
-    $width = $width/7;
-    $height = $height/7;
-} else if($width > 4200 && $width <= 4800 && $width>$height || $height > 4200 && $height <= 4800 && $height>$width) {
-    $width = $width/8;
-    $height = $height/8;
-} else if($width > 4800 && $width <= 5400 && $width>$height || $height > 4800 && $height <= 5600 && $height>$width) {
-    $width = $width/9;
-    $height = $height/9;
-} else if($width > 5400 && $width>$height || $height > 5400 && $height>$width) {
-    $width = $width/10;
-    $height = $height/10;
+$hratio = $height/$width;
+$wratio = $width/$height;
+if ($width > 970) {
+    $width = 970;
+    $height = 970 * $hratio;
+}
+if ($height > 970) {
+    $height = 970;
+    $width = $width * $wratio;
 }
 $zoom = 0;
 if($width>$height) {
@@ -149,17 +131,15 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
-$OUTPUT->flashMessages();
 $OUTPUT->bodyStart();
+$OUTPUT->flashMessages();
 ?>
     <div class="pageInstructions">
         <h3>Edit Photo</h3>
         <p class="instructions-edit">Click the buttons to rotate the image. Drag the edges to crop the photo. Add a description in the box at the bottom of the page. When finished, click the 'save' button.</p>
     </div>
 
-    <div class="container">
-        <div id="pic"></div>
-    </div>
+    <div id="pic"></div>
 
     <div class="editOptions">
         <p>
@@ -173,7 +153,7 @@ $OUTPUT->bodyStart();
                 <textarea class="form-control" id="photo-description" name="photo-description" rows="5"><?=$gallery['description']?></textarea>
             </div>
             <p>
-                <button class="btn btn-success save" id="save">Save</button> <a href="index.php">Cancel</a>
+                <button class="btn btn-success save" id="save">Save</button> <a href="index.php">Cancel Editing</a>
             </p>
         </form>
     </div>
