@@ -26,57 +26,51 @@ if ($settings) {
     $requireApproval = $settings["approval"];
 }
 
-// Other times, we see an error indication on bad upload that does not delete all the $_POST
-if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 1) {
-    $_SESSION['error'] = 'Error: Maximum size of '.BlobUtil::maxUpload().'MB exceeded.';
-    header( 'Location: '.addSession('index.php') ) ;
-    return;
-}
+if($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if(isset($_FILES['filepond'])) {
+        $fdes = $_FILES['filepond'];
 
-if( isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] == 0)
-{
-    $fdes = $_FILES['uploaded_file'];
+        $filename = isset($fdes['name'][0]) ? basename($fdes['name'][0]) : false;
 
-    $filename = isset($fdes['name']) ? basename($fdes['name']) : false;
+        $fdes['name'] = $fdes['name'][0];
+        $fdes['type'] = $fdes['type'][0];
+        $fdes['tmp_name'] = $fdes['tmp_name'][0];
+        $fdes['error'] = $fdes['error'][0];
+        $fdes['size'] = $fdes['size'][0];
 
-    // Sanity-check the file
-    $safety = BlobUtil::validateUpload($fdes);
-    if ( $safety !== true ) {
-        $_SESSION['error'] = "Error: ".$safety;
-        error_log("Upload Error: ".$safety);
-        header( 'Location: '.addSession('index') ) ;
+        $data = "";
+
+        $safety = BlobUtil::validateUpload($fdes);
+        if ( $safety !== true ) {
+            $_SESSION['error'] = "Error: ".$safety;
+            error_log("Upload Error: ".$safety);
+            header( 'Location: '.addSession('multi-photo-edit.php') ) ;
+            return;
+        }
+
+        $blob_id = BlobUtil::uploadToBlob($fdes);
+        if ( $blob_id === false ) {
+            $_SESSION['error'] = 'Problem storing file in server: '.$filename;
+            header( 'Location: '.addSession('multi-photo-edit.php') ) ;
+            return;
+        }
+
+        $description = "";
+
+        $approved = 1;
+        if ($requireApproval == 1 && !$USER->instructor) {
+            $approved = 0;
+        }
+
+        // Save success so add info to gallery database
+        $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved) values (:userId, :description, :blobId, :approved)");
+        $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
+
+        $_SESSION['success'] = 'Photo added successfully.';
+        $url = 'photo-edit.php?id=' . $blob_id;
+        header( 'Location: '.addSession($url) ) ;
         return;
     }
-
-    $blob_id = BlobUtil::uploadToBlob($fdes);
-    if ( $blob_id === false ) {
-        $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-        header( 'Location: '.addSession('index') ) ;
-        return;
-    }
-
-    $description = "";
-
-    $approved = 1;
-    if ($requireApproval == 1 && !$USER->instructor) {
-        $approved = 0;
-    }
-
-    // Save success so add info to gallery database
-    $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved) values (:userId, :description, :blobId, :approved)");
-    $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
-
-    $_SESSION['success'] = 'Photo added successfully.';
-    $url = 'photo-edit.php?id=' . $blob_id;
-    header( 'Location: '.addSession($url) ) ;
-    return;
-}
-
-// If we got a post but no file...
-if ( $_SERVER['REQUEST_METHOD'] == 'POST' ) {
-    $_SESSION['error'] = 'Please choose a photo to upload.';
-    header( 'Location: '.addSession('index.php') ) ;
-    return;
 }
 
 // View
@@ -125,6 +119,13 @@ $OUTPUT->header();
     .image-container2 {
         text-align: center;
     }
+    .photo-box {
+        margin-top: 50px;
+    }
+    .magnify {
+        cursor: pointer;
+        font-size: 20px;
+    }
 </style>
 <?php
 $OUTPUT->bodyStart();
@@ -160,7 +161,6 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
             <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo Gallery</a>
         </div>
         <ul class="nav navbar-nav">
-            <li><a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#uploadModal"><span class="fa fa-plus" aria-hidden="true"></span> Add Photo</a></li>
             <?php
             if ($requireApproval && $USER->instructor) {
                 echo '<li><a href="pending.php">Pending Photos <span class="label label-danger">'.$countPending.'</span></a></li>';
@@ -173,7 +173,11 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
 <?php $OUTPUT->flashMessages(); ?>
 
 <div class="container-fluid">
-    <p>Use the "Add Photo" button above to add a photo to this gallery.</p>
+    <div class="photo-box">
+        <input type="file" class="filepond" name="filepond[]" multiple data-max-file-size="6MB">
+    </div>
+    <input type="checkbox" class="custom-control-input" id="insta-edit">
+    <label for="insta-edit">Edit pictures on upload</label>
     <?php
     if ($requireApproval && $currentUserPendingCount > 0) {
         echo '<p class="alert alert-danger">You have <strong>'.$currentUserPendingCount.'</strong> submitted photo(s) pending approval.</p>';
@@ -236,11 +240,13 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                     </div>
                 </div>
                 <div class="modal-body">
-                    <p>'.$photoInfo["description"].'</p>
+                    <p>'.$photoInfo["description"].'</p>';
+                    ?>
                     <div class="image-container2">
-                        <img class="image-large" src="'.addSession($serve).'">
+                        <a class="magnify" onclick="window.open('<?= addSession($serve) ?>', '_blank');"><img class="image-large" src="<?=addSession($serve)?>"></a>
                     </div>
-                </div>
+                    <?php
+                echo '</div>
                 </div>
             </div>
           </div>';
@@ -252,31 +258,6 @@ if ( $count == 0 ) echo "<p><em>No photos have been added yet.</em></p>\n";
 
 ?>
 </div> <!-- Ending Container -->
-
-<div id="uploadModal" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Upload a Photo<br /><small>Maximum size: <?php echo(BlobUtil::maxUpload());?>MB</small></h4>
-                <h5 class="sideNote"><i>Photos can be edited after upload.</i></h5>
-            </div>
-            <form name="myform" enctype="multipart/form-data" method="post" action="<?php addSession('index.php');?>">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="uploaded_file">Upload Photo</label>
-                        <input name="uploaded_file" type="file" id="uploaded_file">
-                    </div>
-                    <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo(BlobUtil::maxUpload());?>000000" />
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Add Photo</button>
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <?php
 $OUTPUT->footerStart();
@@ -297,6 +278,62 @@ $OUTPUT->footerStart();
                 current_index = 0;
             }
             links[current_index].click();
+        }
+
+        FilePond.registerPlugin(
+            FilePondPluginFileEncode,
+            FilePondPluginFileValidateSize,
+            FilePondPluginFileValidateType,
+            FilePondPluginImageExifOrientation,
+            FilePondPluginImageEdit,
+            FilePondPluginImageCrop,
+            FilePondPluginImageResize,
+            FilePondPluginImageTransform
+        );
+
+        Doka.setOptions({
+            labelStatusAwaitingImage: 'Waiting for image…',
+            labelStatusLoadImageError: 'Error loading image…',
+            labelStatusLoadingImage: 'Loading image…',
+            labelStatusProcessingImage: 'Processing image…'
+        });
+
+        let pond = FilePond.create( document.querySelector('.filepond'), {
+            acceptedFileTypes: ['image/*'],
+            allowMultiple: true,
+            maxParallelUploads: 20,
+            maxFiles: 20,
+            imageEditInstantEdit: false,
+            imageEditEditor: Doka.create(),
+            server: {
+                url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
+            },
+            onprocessfile: (files) => { isLoadingCheck(); }
+        });
+
+        let insta_edit = false;
+        $('input[type="checkbox"]').on('change', function(evt) {
+            insta_edit = !!$(this).is(':checked');
+            FilePond.destroy(document.querySelector('.filepond'));
+            pond = FilePond.create( document.querySelector('.filepond'), {
+                acceptedFileTypes: ['image/*'],
+                allowMultiple: true,
+                maxParallelUploads: 20,
+                maxFiles: 20,
+                imageEditInstantEdit: insta_edit,
+                imageEditEditor: insta_edit ? Doka.create() : null,
+                server: {
+                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
+                },
+                onprocessfile: (files) => { isLoadingCheck(); }
+            });
+        });
+
+        function isLoadingCheck() {
+            let isLoading1 = pond.getFiles().filter(x=>x.status !== 5).length !== 0;
+            if(!isLoading1) {
+                window.location.href='index.php?PHPSESSID=<?php echo session_id() ?>';
+            }
         }
     </script>
 <?php
