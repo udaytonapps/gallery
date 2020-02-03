@@ -8,12 +8,6 @@ use \Tsugi\Blob\BlobUtil;
 
 $p = $CFG->dbprefix;
 
-// Sometimes, if the maxUpload_SIZE is exceeded, it deletes all of $_POST
-// Thus losing our session :(
-if ( $_SERVER['REQUEST_METHOD'] == 'POST' && count($_POST) == 0 ) {
-    die('Error: Maximum size of '.BlobUtil::maxUpload().'MB exceeded.');
-}
-
 // Sanity checks
 $LAUNCH = LTIX::requireData(array(LTIX::CONTEXT, LTIX::LINK));
 
@@ -27,7 +21,45 @@ if ($settings) {
 }
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if(isset($_FILES['filepond'])) {
+    if(isset($_FILES['filepond']) && isset($_GET['id'])) {
+        $fdes = $_FILES['filepond'];
+        var_dump($fdes);
+
+        $filename = isset($fdes['name'][0]) ? basename($fdes['name'][0]) : false;
+
+        $data = "";
+
+        var_dump($_GET['id']);
+
+        // Sanity-check the file
+        $safety = BlobUtil::validateUpload($fdes);
+        if ($safety !== true) {
+            $_SESSION['error'] = "Error: " . $safety;
+            error_log("Upload Error: " . $safety);
+            header('Location: ' . addSession('index.php'));
+            return;
+        }
+
+        $blob_id = BlobUtil::uploadToBlob($fdes);
+        if ($blob_id === false) {
+            $_SESSION['error'] = 'Problem storing file in server: ' . $filename;
+            header('Location: ' . addSession('index.php'));
+            return;
+        }
+
+        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId where user_id = :userId");
+        $editStmt->execute(array(
+            ":blobId" => $blob_id,
+            ":userId" => $USER->id
+        ));
+
+        $deleteId = $_GET['id'];
+
+        $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
+        $deleteBlobST->execute(array(":fileId" => $deleteId));
+
+        header('Location: ' . addSession('index.php'));
+    } else if(isset($_FILES['filepond'])) {
         $fdes = $_FILES['filepond'];
 
         $filename = isset($fdes['name'][0]) ? basename($fdes['name'][0]) : false;
@@ -44,14 +76,14 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ( $safety !== true ) {
             $_SESSION['error'] = "Error: ".$safety;
             error_log("Upload Error: ".$safety);
-            header( 'Location: '.addSession('multi-photo-edit.php') ) ;
+            header( 'Location: '.addSession('index.php') ) ;
             return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-            header( 'Location: '.addSession('multi-photo-edit.php') ) ;
+            header( 'Location: '.addSession('index.php') ) ;
             return;
         }
 
@@ -111,6 +143,7 @@ $OUTPUT->header();
     }
     .editPhoto {
         margin-left: 2%;
+        cursor: pointer;
     }
     .image-container {
         width: 200px;
@@ -125,6 +158,9 @@ $OUTPUT->header();
     .magnify {
         cursor: pointer;
         font-size: 20px;
+    }
+    .doka--root {
+        margin-top: -100%;
     }
 </style>
 <?php
@@ -228,7 +264,7 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                         ?>
                         <div style="flex-grow: 1">
                         <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
-                        <a href="photo-edit.php?id=<?=$id?>" class="editPhoto"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', <?php echo $id ?>)"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
                         </div>
                     <?php
                     }
@@ -278,6 +314,25 @@ $OUTPUT->footerStart();
                 current_index = 0;
             }
             links[current_index].click();
+        }
+
+        function editPhoto(src, id) {
+            let img = new Image();
+            img.src = src;
+            const pond = FilePond.create({
+                imageEditInstantEdit: true,
+                instantUpload: true,
+                imageEditEditor: Doka.create({
+                    cropResizeScrollRectOnly: true,
+                    outputStripImageHead: false
+                }),
+                server: {
+                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id
+                }
+            });
+
+            pond.addFile(src);
+            pond.onprocessfile = (files) => { isLoadingCheck(); }
         }
 
         FilePond.registerPlugin(
