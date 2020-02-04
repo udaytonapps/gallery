@@ -21,15 +21,21 @@ if ($settings) {
 }
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if(isset($_FILES['filepond']) && isset($_GET['id'])) {
+    if(isset($_POST['captionText'])) {
+        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET description = :description where blob_id = :blobId");
+        $editStmt->execute(array(
+            ":description" => $_POST['captionText'],
+            ":blobId" => $_POST['id']
+        ));
+
+        header('Location: ' . addSession('index.php'));
+    }
+    else if(isset($_FILES['filepond']) && isset($_GET['id'])) {
         $fdes = $_FILES['filepond'];
-        var_dump($fdes);
 
         $filename = isset($fdes['name'][0]) ? basename($fdes['name'][0]) : false;
 
         $data = "";
-
-        var_dump($_GET['id']);
 
         // Sanity-check the file
         $safety = BlobUtil::validateUpload($fdes);
@@ -47,13 +53,13 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             return;
         }
 
-        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId where user_id = :userId");
+        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId where photo_id = :photoId");
         $editStmt->execute(array(
             ":blobId" => $blob_id,
-            ":userId" => $USER->id
+            ":photoId" => $_GET['id']
         ));
 
-        $deleteId = $_GET['id'];
+        $deleteId = $_GET['blob'];
 
         $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
         $deleteBlobST->execute(array(":fileId" => $deleteId));
@@ -145,6 +151,18 @@ $OUTPUT->header();
         margin-left: 2%;
         cursor: pointer;
     }
+    .addCaption {
+        cursor: pointer;
+    }
+    .caption {
+        margin-bottom: 10px;
+        width: 100%;
+        max-width: 100%;
+    }
+    .captionText {
+        margin-bottom: 10px;
+        max-width: 100%;
+    }
     .image-container {
         width: 200px;
         height: 200px;
@@ -160,7 +178,7 @@ $OUTPUT->header();
         font-size: 20px;
     }
     .doka--root {
-        margin-top: -100%;
+
     }
 </style>
 <?php
@@ -212,8 +230,6 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
     <div class="photo-box">
         <input type="file" class="filepond" name="filepond[]" multiple data-max-file-size="6MB">
     </div>
-    <input type="checkbox" class="custom-control-input" id="insta-edit">
-    <label for="insta-edit">Edit pictures on upload</label>
     <?php
     if ($requireApproval && $currentUserPendingCount > 0) {
         echo '<p class="alert alert-danger">You have <strong>'.$currentUserPendingCount.'</strong> submitted photo(s) pending approval.</p>';
@@ -264,7 +280,7 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                         ?>
                         <div style="flex-grow: 1">
                         <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
-                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', <?php echo $id ?>)"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $photoInfo['photo_id'] ?>', '<?php echo $id ?>')"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
                         </div>
                     <?php
                     }
@@ -275,8 +291,47 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                     </ul>
                     </div>
                 </div>
-                <div class="modal-body">
-                    <p>'.$photoInfo["description"].'</p>';
+                <div class="modal-body">';
+                    if($photoInfo["description"] != NULL) {
+                        ?>
+                        <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>"><span class="fa fa-edit"></span> Edit Caption</a>
+                        <p id="editCaption0<?php echo $id ?>"><?=$photoInfo["description"]?></p>
+                        <form method="post" id="caption">
+                            <input type="hidden" name="id" value="<?=$id?>">
+                            <div class="container caption">
+                                <div class="row" id="captionEdit1<?php echo $id ?>" hidden>
+                                    <h4>Edit Photo Caption</h4>
+                                </div>
+                                <div class="row" id="captionEdit2<?php echo $id ?>" hidden>
+                                    <textarea class="form-control captionText" name="captionText"><?=$photoInfo["description"]?></textarea>
+                                </div>
+                                <div class="row" id="captionEdit3<?php echo $id ?>" hidden>
+                                    <button class="btn btn-primary save" id="save">Save</button>
+                                    <a class="addCaption" onclick="cancelEditCaption(<?php echo $id ?>)">Cancel</a>
+                                </div>
+                            </div>
+                        </form>
+                        <?php
+                    } else {
+                        ?>
+                        <a onclick="addCaption(<?php echo $id ?>)" class="addCaption" id="addCaption<?php echo $id ?>"><span class="fa fa-plus"></span> Add Photo Caption</a>
+                        <form method="post" id="caption">
+                            <input type="hidden" name="id" value="<?=$id?>">
+                            <div class="container caption">
+                                <div class="row" id="captionCont1<?php echo $id ?>" hidden>
+                                    <h4>Add Photo Caption</h4>
+                                </div>
+                                <div class="row" id="captionCont2<?php echo $id ?>" hidden>
+                                    <textarea class="form-control captionText" name="captionText"></textarea>
+                                </div>
+                                <div class="row" id="captionCont3<?php echo $id ?>" hidden>
+                                    <button class="btn btn-primary save" id="save">Save</button>
+                                    <a class="addCaption" onclick="cancelAddCaption(<?php echo $id ?>)">Cancel</a>
+                                </div>
+                            </div>
+                        </form>
+                        <?php
+                    }
                     ?>
                     <div class="image-container2">
                         <a class="magnify" onclick="window.open('<?= addSession($serve) ?>', '_blank');"><img class="image-large" src="<?=addSession($serve)?>"></a>
@@ -316,7 +371,37 @@ $OUTPUT->footerStart();
             links[current_index].click();
         }
 
-        function editPhoto(src, id) {
+        function addCaption(id) {
+            document.getElementById('addCaption' + id).style.display = "none";
+            document.getElementById('captionCont1' + id).style.display = "block";
+            document.getElementById('captionCont2' + id).style.display = "block";
+            document.getElementById('captionCont3' + id).style.display = "block";
+        }
+
+        function cancelAddCaption(id) {
+            document.getElementById('addCaption' + id).style.display = "block";
+            document.getElementById('captionCont1' + id).style.display = "none";
+            document.getElementById('captionCont2' + id).style.display = "none";
+            document.getElementById('captionCont3' + id).style.display = "none";
+        }
+
+        function editCaption(id) {
+            document.getElementById('editCaption' + id).style.display = "none";
+            document.getElementById('editCaption0' + id).style.display = "none";
+            document.getElementById('captionEdit1' + id).style.display = "block";
+            document.getElementById('captionEdit2' + id).style.display = "block";
+            document.getElementById('captionEdit3' + id).style.display = "block";
+        }
+
+        function cancelEditCaption(id) {
+            document.getElementById('editCaption' + id).style.display = "block";
+            document.getElementById('editCaption0' + id).style.display = "block";
+            document.getElementById('captionEdit1' + id).style.display = "none";
+            document.getElementById('captionEdit2' + id).style.display = "none";
+            document.getElementById('captionEdit3' + id).style.display = "none";
+        }
+
+        function editPhoto(src, id, blob) {
             let img = new Image();
             img.src = src;
             const pond = FilePond.create({
@@ -327,12 +412,12 @@ $OUTPUT->footerStart();
                     outputStripImageHead: false
                 }),
                 server: {
-                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id
+                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id + '&blob=' + blob
                 }
             });
 
             pond.addFile(src);
-            pond.onprocessfile = (files) => { isLoadingCheck(); }
+            pond.onprocessfile = (files) => { window.location.href='index.php?PHPSESSID=<?php echo session_id() ?>'; }
         }
 
         FilePond.registerPlugin(
@@ -358,31 +443,21 @@ $OUTPUT->footerStart();
             allowMultiple: true,
             maxParallelUploads: 20,
             maxFiles: 20,
-            imageEditInstantEdit: false,
             imageEditEditor: Doka.create(),
             server: {
                 url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
             },
+            onaddfilestart: (files) => { isMultipleFiles(); },
             onprocessfile: (files) => { isLoadingCheck(); }
         });
 
-        let insta_edit = false;
-        $('input[type="checkbox"]').on('change', function(evt) {
-            insta_edit = !!$(this).is(':checked');
-            FilePond.destroy(document.querySelector('.filepond'));
-            pond = FilePond.create( document.querySelector('.filepond'), {
-                acceptedFileTypes: ['image/*'],
-                allowMultiple: true,
-                maxParallelUploads: 20,
-                maxFiles: 20,
-                imageEditInstantEdit: insta_edit,
-                imageEditEditor: insta_edit ? Doka.create() : null,
-                server: {
-                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
-                },
-                onprocessfile: (files) => { isLoadingCheck(); }
-            });
-        });
+        function isMultipleFiles() {
+            let isMultiple = pond.getFiles().length > 1;
+            console.log(isMultiple);
+            pond.setOptions({
+                imageEditInstantEdit: !isMultiple
+            })
+        }
 
         function isLoadingCheck() {
             let isLoading1 = pond.getFiles().filter(x=>x.status !== 5).length !== 0;
