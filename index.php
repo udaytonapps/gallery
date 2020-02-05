@@ -105,8 +105,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
 
         $_SESSION['success'] = 'Photo added successfully.';
-        $url = 'photo-edit.php?id=' . $blob_id;
-        header( 'Location: '.addSession($url) ) ;
+        header( 'Location: '.addSession('index.php') ) ;
         return;
     }
 }
@@ -180,6 +179,13 @@ $OUTPUT->header();
     .doka--root {
         max-height: 800px;
     }
+    .filepond-main-label {
+        text-decoration: none;
+        cursor: pointer;
+    }
+    [class ^= filepond--drop-label] {
+        cursor: pointer;
+    }
 </style>
 <?php
 $OUTPUT->bodyStart();
@@ -239,7 +245,8 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
 
 <?php
 $count = 0;
-while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
+$sortedList = $sortedPhotos->fetchAll(PDO::FETCH_ASSOC);
+foreach ($sortedList as $row) {
     $id = $row['file_id'];
     $fn = $row['file_name'];
     $date = $row['created_at'];
@@ -284,11 +291,13 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                         </div>
                     <?php
                     }
-                    echo '
+                    ?>
                     <ul class="pager" style="margin: 0;">
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count. ')">Previous</a></li>
+                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext(' .$count. ')">Next</a></li>
                     </ul>
+                    <?php
+                    echo '
                     </div>
                 </div>
                 <div class="modal-body">';
@@ -446,6 +455,7 @@ $OUTPUT->footerStart();
             allowMultiple: true,
             maxParallelUploads: 20,
             maxFiles: 20,
+            labelIdle: '<span class="filepond-main-label">Drag & Drop Your Photos or Click to Browse</span>',
             imageEditEditor: Doka.create(),
             server: {
                 url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
