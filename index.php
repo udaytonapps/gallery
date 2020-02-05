@@ -178,7 +178,7 @@ $OUTPUT->header();
         font-size: 20px;
     }
     .doka--root {
-
+        max-height: 800px;
     }
 </style>
 <?php
@@ -293,8 +293,12 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                 </div>
                 <div class="modal-body">';
                     if($photoInfo["description"] != NULL) {
+                        if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
+                            ?>
+                            <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>"><span class="fa fa-edit"></span> Edit Caption</a>
+                            <?php
+                        }
                         ?>
-                        <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>"><span class="fa fa-edit"></span> Edit Caption</a>
                         <p id="editCaption0<?php echo $id ?>"><?=$photoInfo["description"]?></p>
                         <form method="post" id="caption">
                             <input type="hidden" name="id" value="<?=$id?>">
@@ -312,7 +316,7 @@ while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
                             </div>
                         </form>
                         <?php
-                    } else {
+                    } else if($USER->instructor || $USER->id == $photoInfo["user_id"]) {
                         ?>
                         <a onclick="addCaption(<?php echo $id ?>)" class="addCaption" id="addCaption<?php echo $id ?>"><span class="fa fa-plus"></span> Add Photo Caption</a>
                         <form method="post" id="caption">
@@ -415,7 +419,6 @@ $OUTPUT->footerStart();
                     url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id + '&blob=' + blob
                 }
             });
-
             pond.addFile(src);
             pond.onprocessfile = (files) => { window.location.href='index.php?PHPSESSID=<?php echo session_id() ?>'; }
         }
