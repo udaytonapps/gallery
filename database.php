@@ -12,6 +12,7 @@ $DATABASE_INSTALL = array(
     user_id     INTEGER NOT NULL,
     description TEXT NULL,
     blob_id     INTEGER NOT NULL,
+    thumb_id    INTEGER NOT NULL,
     approved    BOOL DEFAULT 0,
     
     PRIMARY KEY(photo_id)

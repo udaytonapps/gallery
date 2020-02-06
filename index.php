@@ -15,6 +15,77 @@ $settingsStmt = $PDOX->prepare("SELECT approval FROM {$p}gallery_main WHERE link
 $settingsStmt->execute(array(":linkId" => $LINK->id));
 $settings = $settingsStmt->fetch(PDO::FETCH_ASSOC);
 
+const IMAGE_HANDLERS = [
+    IMAGETYPE_JPEG => [
+        'load' => 'imagecreatefromjpeg',
+        'save' => 'imagejpeg',
+        'quality' => 100
+    ],
+    IMAGETYPE_PNG => [
+        'load' => 'imagecreatefrompng',
+        'save' => 'imagepng',
+        'quality' => 0
+    ],
+    IMAGETYPE_GIF => [
+        'load' => 'imagecreatefromgif',
+        'save' => 'imagegif'
+    ]
+];
+
+function createThumbnail($src, $dest, $targetWidth, $targetHeight = null) {
+
+    $type = exif_imagetype($src);
+
+    if (!$type || !IMAGE_HANDLERS[$type]) {
+        return null;
+    }
+
+    $image = call_user_func(IMAGE_HANDLERS[$type]['load'], $src);
+
+    if (!$image) {
+        return null;
+    }
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    if ($targetHeight == null) {
+        $ratio = $width / $height;
+
+        if ($width > $height) {
+            $targetHeight = floor($targetWidth / $ratio);
+        }
+        else {
+            $targetHeight = $targetWidth;
+            $targetWidth = floor($targetWidth * $ratio);
+        }
+    }
+
+    $thumbnail = imagecreatetruecolor($targetWidth, $targetHeight);
+
+    if ($type == IMAGETYPE_GIF || $type == IMAGETYPE_PNG) {
+
+        imagecolortransparent(
+            $thumbnail,
+            imagecolorallocate($thumbnail, 0, 0, 0)
+        );
+
+        if ($type == IMAGETYPE_PNG) {
+            imagealphablending($thumbnail, false);
+            imagesavealpha($thumbnail, true);
+        }
+    }
+
+    imagecopyresampled(
+        $thumbnail,
+        $image,
+        0, 0, 0, 0,
+        $targetWidth, $targetHeight,
+        $width, $height
+    );
+
+    return $thumbnail;
+}
+
 $requireApproval = 0;
 if ($settings) {
     $requireApproval = $settings["approval"];
@@ -76,12 +147,21 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $fdes['error'] = $fdes['error'][0];
         $fdes['size'] = $fdes['size'][0];
 
-        $data = "";
+        $thumb = createThumbnail($fdes['tmp_name'], 'thumb' . $fdes['tmp_name'], 200);
+        imagejpeg($thumb, '/tmp/thumb_' . $fdes['name']);
 
-        $safety = BlobUtil::validateUpload($fdes);
-        if ( $safety !== true ) {
-            $_SESSION['error'] = "Error: ".$safety;
-            error_log("Upload Error: ".$safety);
+        $fbes['name'] = 'thumb_' . $fdes['name'];
+        $fbes['type'] = $fdes['type'];
+        $fbes['tmp_name'] = '/tmp/' . $fbes['name'];
+        $fbes['error'] = 0;
+        $fbes['size'] = getimagesize($fbes['tmp_name']);
+
+        $thumbname = isset($fbes['name']) ? basename($fbes['name']) : false;
+
+        $safety1 = BlobUtil::validateUpload($fdes);
+        if ( $safety1 !== true ) {
+            $_SESSION['error'] = "Error: ".$safety1;
+            error_log("Upload Error: ".$safety1);
             header( 'Location: '.addSession('index.php') ) ;
             return;
         }
@@ -89,6 +169,21 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
+        }
+
+        $safety2 = BlobUtil::validateUpload($fbes);
+        if ( $safety2 !== true ) {
+            $_SESSION['error'] = "Error: ".$safety2;
+            error_log("Upload Error: ".$safety2);
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
+        }
+
+        $thumb_id = BlobUtil::uploadToBlob($fbes);
+        if ( $thumb_id === false ) {
+            $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
             header( 'Location: '.addSession('index.php') ) ;
             return;
         }
@@ -101,8 +196,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Save success so add info to gallery database
-        $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, approved) values (:userId, :description, :blobId, :approved)");
-        $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":approved" => $approved));
+        $newStmt = $PDOX->prepare("INSERT INTO {$p}photo_gallery (user_id, description, blob_id, thumb_id, approved) values (:userId, :description, :blobId, :thumbId, :approved)");
+        $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":thumbId" => $thumb_id, ":approved" => $approved));
 
         $_SESSION['success'] = 'Photo added successfully.';
         header( 'Location: '.addSession('index.php') ) ;
@@ -245,16 +340,23 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
 
 <?php
 $count = 0;
-$sortedList = $sortedPhotos->fetchAll(PDO::FETCH_ASSOC);
-foreach ($sortedList as $row) {
-    $id = $row['file_id'];
-    $fn = $row['file_name'];
-    $date = $row['created_at'];
+$infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery");
+$infostmt->execute();
+$photoList = $infostmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($photoList as $row) {
+    $id = $row['blob_id'];
+    $thumbId = isset($row['thumb_id']) ? $row['thumb_id'] : $row['blob_id'];
+
+    $photoInfostmt = $PDOX->prepare("SELECT file_name, created_at FROM {$p}blob_file
+        WHERE file_id = :fileId");
+    $photoInfostmt->execute(array(":fileId" => $row['blob_id']));
+    $photoInfo = $photoInfostmt->fetch(PDO::FETCH_ASSOC);
+
+    $fn = $photoInfo['file_name'];
+    $date = $photoInfo['created_at'];
 
     $serve = BlobUtil::getAccessUrlForBlob($id);
-    $infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery WHERE blob_id = :blobId");
-    $infostmt->execute(array(":blobId" => $id));
-    $photoInfo = $infostmt->fetch(PDO::FETCH_ASSOC);
+    $thumb = BlobUtil::getAccessUrlForBlob($thumbId);
 
     if ($requireApproval && $photoInfo["approved"] == "0") {
         continue;
@@ -264,18 +366,20 @@ foreach ($sortedList as $row) {
     $formattedDate = $photoDate->format("m-d-y") . " at " . $photoDate->format("h:i A");
 
     $namestmt = $PDOX->prepare("SELECT displayname FROM {$p}lti_user WHERE user_id = :user_id;");
-    $namestmt->execute(array(":user_id" => $photoInfo["user_id"]));
+    $namestmt->execute(array(":user_id" => $row["user_id"]));
     $name = $namestmt->fetch(PDO::FETCH_ASSOC);
-
-    echo '<div class="gallery-column">
-            <a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#image'.$id.'" class="image-link">
+?>
+    <div class="gallery-column">
+            <a href="#" role="button" data-toggle="modal" data-target="#image<?=$id?>" class="image-link">
             <div class="image-container">
-                <img class="gallery-image" src="'.addSession($serve).'">
+                <img class="gallery-image" src="<?=addSession($thumb)?>">
             </div>
                 
             </a>
           </div>
-          <div id="image'.$id.'" class="modal fade" role="dialog">
+<?php
+          echo '
+          <div id="image'.$id.'" class="modal" role="dialog">
             <div class="modal-dialog modal-lg">
                 <!-- Modal content-->
                 <div class="modal-content">
@@ -283,32 +387,32 @@ foreach ($sortedList as $row) {
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4>Photo added by '.$name["displayname"].'<br /><small>'.$formattedDate.'</small></h4>
                     <div style="display:flex">';
-                    if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
+                    if ($USER->instructor || $USER->id == $row["user_id"]) {
                         ?>
                         <div style="flex-grow: 1">
                         <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
-                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $photoInfo['photo_id'] ?>', '<?php echo $id ?>')"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $row['photo_id'] ?>', '<?php echo $id ?>')"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
                         </div>
                     <?php
                     }
                     ?>
                     <ul class="pager" style="margin: 0;">
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count. ')">Previous</a></li>
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext(' .$count. ')">Next</a></li>
+                        <li><a href="#" data-dismiss="modal" onclick="gotoprev(<?=$count?>)">Previous</a></li>
+                        <li><a href="#" data-dismiss="modal" onclick="gotonext(<?=$count?>)">Next</a></li>
                     </ul>
                     <?php
                     echo '
                     </div>
                 </div>
                 <div class="modal-body">';
-                    if($photoInfo["description"] != NULL) {
-                        if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
+                    if($row["description"] != NULL) {
+                        if ($USER->instructor || $USER->id == $row["user_id"]) {
                             ?>
                             <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>"><span class="fa fa-edit"></span> Edit Caption</a>
                             <?php
                         }
                         ?>
-                        <p id="editCaption0<?php echo $id ?>"><?=$photoInfo["description"]?></p>
+                        <p id="editCaption0<?php echo $id ?>"><?=$row["description"]?></p>
                         <form method="post" id="caption">
                             <input type="hidden" name="id" value="<?=$id?>">
                             <div class="container caption">
@@ -316,7 +420,7 @@ foreach ($sortedList as $row) {
                                     <h4>Edit Photo Caption</h4>
                                 </div>
                                 <div class="row" id="captionEdit2<?php echo $id ?>" hidden>
-                                    <textarea class="form-control captionText" name="captionText"><?=$photoInfo["description"]?></textarea>
+                                    <textarea class="form-control captionText" name="captionText"><?=$row["description"]?></textarea>
                                 </div>
                                 <div class="row" id="captionEdit3<?php echo $id ?>" hidden>
                                     <button class="btn btn-primary save" id="save">Save</button>
@@ -325,7 +429,7 @@ foreach ($sortedList as $row) {
                             </div>
                         </form>
                         <?php
-                    } else if($USER->instructor || $USER->id == $photoInfo["user_id"]) {
+                    } else if($USER->instructor || $USER->id == $row["user_id"]) {
                         ?>
                         <a onclick="addCaption(<?php echo $id ?>)" class="addCaption" id="addCaption<?php echo $id ?>"><span class="fa fa-plus"></span> Add Photo Caption</a>
                         <form method="post" id="caption">
@@ -368,7 +472,7 @@ $OUTPUT->footerStart();
 ?>
     <script type="text/javascript">
         function gotoprev(current_index) {
-            var links = document.getElementsByClassName("image-link");
+            let links = document.getElementsByClassName("image-link");
             current_index--;
             if (current_index < 0) {
                 current_index = links.length -1;
@@ -376,7 +480,7 @@ $OUTPUT->footerStart();
             links[current_index].click();
         }
         function gotonext(current_index) {
-            var links = document.getElementsByClassName("image-link");
+            let links = document.getElementsByClassName("image-link");
             current_index++;
             if (current_index >= links.length) {
                 current_index = 0;
