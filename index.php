@@ -98,8 +98,6 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             ":description" => $_POST['captionText'],
             ":blobId" => $_POST['id']
         ));
-
-        header('Location: ' . addSession('index.php'));
     }
     else if(isset($_FILES['filepond']) && isset($_GET['id'])) {
         $fdes = $_FILES['filepond'];
@@ -121,30 +119,30 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ( $safety1 !== true ) {
             $_SESSION['error'] = "Error: ".$safety1;
             error_log("Upload Error: ".$safety1);
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $safety2 = BlobUtil::validateUpload($fbes);
         if ( $safety2 !== true ) {
             $_SESSION['error'] = "Error: ".$safety2;
             error_log("Upload Error: ".$safety2);
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $thumb_id = BlobUtil::uploadToBlob($fbes);
         if ( $thumb_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId, thumb_id = :thumbId where photo_id = :photoId");
@@ -163,7 +161,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
         $deleteBlobST->execute(array(":fileId" => $deleteThumbId));
 
-        header('Location: ' . addSession('index.php'));
+//        header('Location: ' . addSession('index.php'));
     } else if(isset($_FILES['filepond'])) {
         $fdes = $_FILES['filepond'];
 
@@ -190,30 +188,30 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ( $safety1 !== true ) {
             $_SESSION['error'] = "Error: ".$safety1;
             error_log("Upload Error: ".$safety1);
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $safety2 = BlobUtil::validateUpload($fbes);
         if ( $safety2 !== true ) {
             $_SESSION['error'] = "Error: ".$safety2;
             error_log("Upload Error: ".$safety2);
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $thumb_id = BlobUtil::uploadToBlob($fbes);
         if ( $thumb_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
-            header( 'Location: '.addSession('index.php') ) ;
-            return;
+//            header( 'Location: '.addSession('index.php') ) ;
+//            return;
         }
 
         $description = "";
@@ -228,8 +226,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":thumbId" => $thumb_id, ":approved" => $approved));
 
         $_SESSION['success'] = 'Photo added successfully.';
-        header( 'Location: '.addSession('index.php') ) ;
-        return;
+//        header( 'Location: '.addSession('index.php') ) ;
+//        return;
     }
 }
 
@@ -440,17 +438,17 @@ foreach ($photoList as $row) {
                         }
                         ?>
                         <p id="editCaption0<?php echo $id ?>"><?=$row["description"]?></p>
-                        <form method="post" id="caption">
+                        <form id="captionEdit<?php echo $id ?>">
                             <input type="hidden" name="id" value="<?=$id?>">
                             <div class="container caption">
                                 <div class="row" id="captionEdit1<?php echo $id ?>" hidden>
                                     <h4>Edit Photo Caption</h4>
                                 </div>
                                 <div class="row" id="captionEdit2<?php echo $id ?>" hidden>
-                                    <textarea class="form-control captionText" name="captionText"><?=$row["description"]?></textarea>
+                                    <textarea class="form-control captionText" name="captionText" id="captionEdit4<?php echo $id ?>"><?=$row["description"]?></textarea>
                                 </div>
                                 <div class="row" id="captionEdit3<?php echo $id ?>" hidden>
-                                    <button class="btn btn-primary save" id="save">Save</button>
+                                    <button class="btn btn-primary save" onclick="submitEdit(<?php echo $id ?>)" id="save">Save</button>
                                     <a class="addCaption" onclick="cancelEditCaption(<?php echo $id ?>)">Cancel</a>
                                 </div>
                             </div>
@@ -458,18 +456,20 @@ foreach ($photoList as $row) {
                         <?php
                     } else if($USER->instructor || $USER->id == $row["user_id"]) {
                         ?>
+                        <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>" hidden><span class="fa fa-edit"></span> Edit Caption</a>
+                        <p id="addCaptionTemp<?php echo $id ?>" hidden></p>
                         <a onclick="addCaption(<?php echo $id ?>)" class="addCaption" id="addCaption<?php echo $id ?>"><span class="fa fa-plus"></span> Add Photo Caption</a>
-                        <form method="post" id="caption">
+                        <form id="captionAdd<?php echo $id ?>">
                             <input type="hidden" name="id" value="<?=$id?>">
                             <div class="container caption">
                                 <div class="row" id="captionCont1<?php echo $id ?>" hidden>
                                     <h4>Add Photo Caption</h4>
                                 </div>
                                 <div class="row" id="captionCont2<?php echo $id ?>" hidden>
-                                    <textarea class="form-control captionText" name="captionText"></textarea>
+                                    <textarea class="form-control captionText" id="captionText<?php echo $id ?>" name="captionText"></textarea>
                                 </div>
                                 <div class="row" id="captionCont3<?php echo $id ?>" hidden>
-                                    <button class="btn btn-primary save" id="save">Save</button>
+                                    <button class="btn btn-primary save" onclick="submitAdd(<?php echo $id ?>)" id="save">Save</button>
                                     <a class="addCaption" onclick="cancelAddCaption(<?php echo $id ?>)">Cancel</a>
                                 </div>
                             </div>
@@ -543,6 +543,43 @@ $OUTPUT->footerStart();
             document.getElementById('captionEdit1' + id).style.display = "none";
             document.getElementById('captionEdit2' + id).style.display = "none";
             document.getElementById('captionEdit3' + id).style.display = "none";
+        }
+
+        function submitAdd(id) {
+            $('#captionAdd' + id).submit(function() {
+                let post_data = $('#captionAdd' + id).serialize();
+                document.getElementById('addCaptionTemp' + id).innerHTML = document.getElementById('captionText' + id).value;
+                document.getElementById('addCaptionTemp' + id).style.display = "block";
+                document.getElementById('addCaption' + id).style.display = "none";
+                document.getElementById('captionCont1' + id).style.display = "none";
+                document.getElementById('captionCont2' + id).style.display = "none";
+                document.getElementById('captionCont3' + id).style.display = "none";
+                document.getElementById('editCaption' + id).style.display = "block";
+                $.ajax({
+                    type: 'POST',
+                    url: 'index.php',
+                    data: post_data
+                });
+                return false;
+            });
+        }
+
+        function submitEdit(id) {
+            $('#captionEdit' + id).submit(function() {
+                let post_data = $('#captionEdit' + id).serialize();
+                document.getElementById('editCaption0' + id).innerHTML = document.getElementById('captionEdit4' + id).value;
+                document.getElementById('editCaption0' + id).style.display = "block";
+                document.getElementById('captionEdit1' + id).style.display = "none";
+                document.getElementById('captionEdit2' + id).style.display = "none";
+                document.getElementById('captionEdit3' + id).style.display = "none";
+                document.getElementById('editCaption' + id).style.display = "block";
+                $.ajax({
+                    type: 'POST',
+                    url: 'index.php',
+                    data: post_data
+                });
+                return false;
+            });
         }
 
         function editPhoto(src, id, blob, thumb) {
