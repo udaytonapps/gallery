@@ -457,7 +457,7 @@ foreach ($photoList as $row) {
                     } else if($USER->instructor || $USER->id == $row["user_id"]) {
                         ?>
                         <a onclick="editCaption(<?php echo $id ?>)" class="addCaption" id="editCaption<?php echo $id ?>" hidden><span class="fa fa-edit"></span> Edit Caption</a>
-                        <p id="addCaptionTemp<?php echo $id ?>" hidden></p>
+                        <p id="editCaption0<?php echo $id ?>" hidden></p>
                         <a onclick="addCaption(<?php echo $id ?>)" class="addCaption" id="addCaption<?php echo $id ?>"><span class="fa fa-plus"></span> Add Photo Caption</a>
                         <form id="captionAdd<?php echo $id ?>">
                             <input type="hidden" name="id" value="<?=$id?>">
@@ -471,6 +471,21 @@ foreach ($photoList as $row) {
                                 <div class="row" id="captionCont3<?php echo $id ?>" hidden>
                                     <button class="btn btn-primary save" onclick="submitAdd(<?php echo $id ?>)" id="save">Save</button>
                                     <a class="addCaption" onclick="cancelAddCaption(<?php echo $id ?>)">Cancel</a>
+                                </div>
+                            </div>
+                        </form>
+                        <form id="captionEdit<?php echo $id ?>">
+                            <input type="hidden" name="id" value="<?=$id?>">
+                            <div class="container caption">
+                                <div class="row" id="captionEdit1<?php echo $id ?>" hidden>
+                                    <h4>Edit Photo Caption</h4>
+                                </div>
+                                <div class="row" id="captionEdit2<?php echo $id ?>" hidden>
+                                    <textarea class="form-control captionText" name="captionText" id="captionEdit4<?php echo $id ?>"><?=$row["description"]?></textarea>
+                                </div>
+                                <div class="row" id="captionEdit3<?php echo $id ?>" hidden>
+                                    <button class="btn btn-primary save" onclick="submitEdit(<?php echo $id ?>)" id="save">Save</button>
+                                    <a class="addCaption" onclick="cancelEditCaption(<?php echo $id ?>)">Cancel</a>
                                 </div>
                             </div>
                         </form>
@@ -530,6 +545,10 @@ $OUTPUT->footerStart();
         }
 
         function editCaption(id) {
+            console.log(document.getElementById('editCaption0' + id).innerHTML);
+            if(document.getElementById('captionEdit4' + id).value === "") {
+                document.getElementById('captionEdit4' + id).innerHTML = document.getElementById('editCaption0' + id).innerHTML;
+            }
             document.getElementById('editCaption' + id).style.display = "none";
             document.getElementById('editCaption0' + id).style.display = "none";
             document.getElementById('captionEdit1' + id).style.display = "block";
@@ -548,8 +567,8 @@ $OUTPUT->footerStart();
         function submitAdd(id) {
             $('#captionAdd' + id).submit(function() {
                 let post_data = $('#captionAdd' + id).serialize();
-                document.getElementById('addCaptionTemp' + id).innerHTML = document.getElementById('captionText' + id).value;
-                document.getElementById('addCaptionTemp' + id).style.display = "block";
+                document.getElementById('editCaption0' + id).innerHTML = document.getElementById('captionText' + id).value;
+                document.getElementById('editCaption0' + id).style.display = "block";
                 document.getElementById('addCaption' + id).style.display = "none";
                 document.getElementById('captionCont1' + id).style.display = "none";
                 document.getElementById('captionCont2' + id).style.display = "none";
