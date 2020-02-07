@@ -340,13 +340,12 @@ while ( $photo = $allPhotos->fetch(PDO::FETCH_ASSOC) ) {
 
 <?php
 $count = 0;
-$infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery");
+$infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery ORDER BY photo_id desc");
 $infostmt->execute();
 $photoList = $infostmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($photoList as $row) {
     $id = $row['blob_id'];
     $thumbId = isset($row['thumb_id']) ? $row['thumb_id'] : $row['blob_id'];
-
     $photoInfostmt = $PDOX->prepare("SELECT file_name, created_at FROM {$p}blob_file
         WHERE file_id = :fileId");
     $photoInfostmt->execute(array(":fileId" => $row['blob_id']));
