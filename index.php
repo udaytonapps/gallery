@@ -106,34 +106,62 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $filename = isset($fdes['name'][0]) ? basename($fdes['name'][0]) : false;
 
-        $data = "";
+        $thumb = createThumbnail($fdes['tmp_name'], 'thumb' . $fdes['tmp_name'], 200);
+        imagejpeg($thumb, '/tmp/thumb_' . $fdes['name']);
 
-        // Sanity-check the file
-        $safety = BlobUtil::validateUpload($fdes);
-        if ($safety !== true) {
-            $_SESSION['error'] = "Error: " . $safety;
-            error_log("Upload Error: " . $safety);
-            header('Location: ' . addSession('index.php'));
+        $fbes['name'] = 'thumb_' . $fdes['name'];
+        $fbes['type'] = $fdes['type'];
+        $fbes['tmp_name'] = '/tmp/' . $fbes['name'];
+        $fbes['error'] = 0;
+        $fbes['size'] = getimagesize($fbes['tmp_name']);
+
+        $thumbname = isset($fbes['name']) ? basename($fbes['name']) : false;
+
+        $safety1 = BlobUtil::validateUpload($fdes);
+        if ( $safety1 !== true ) {
+            $_SESSION['error'] = "Error: ".$safety1;
+            error_log("Upload Error: ".$safety1);
+            header( 'Location: '.addSession('index.php') ) ;
             return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
-        if ($blob_id === false) {
-            $_SESSION['error'] = 'Problem storing file in server: ' . $filename;
-            header('Location: ' . addSession('index.php'));
+        if ( $blob_id === false ) {
+            $_SESSION['error'] = 'Problem storing file in server: '.$filename;
+            header( 'Location: '.addSession('index.php') ) ;
             return;
         }
 
-        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId where photo_id = :photoId");
+        $safety2 = BlobUtil::validateUpload($fbes);
+        if ( $safety2 !== true ) {
+            $_SESSION['error'] = "Error: ".$safety2;
+            error_log("Upload Error: ".$safety2);
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
+        }
+
+        $thumb_id = BlobUtil::uploadToBlob($fbes);
+        if ( $thumb_id === false ) {
+            $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
+        }
+
+        $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId, thumb_id = :thumbId where photo_id = :photoId");
         $editStmt->execute(array(
             ":blobId" => $blob_id,
+            ":thumbId" => $thumb_id,
             ":photoId" => $_GET['id']
         ));
 
         $deleteId = $_GET['blob'];
+        $deleteThumbId = $_GET['thumb'];
 
         $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
         $deleteBlobST->execute(array(":fileId" => $deleteId));
+
+        $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
+        $deleteBlobST->execute(array(":fileId" => $deleteThumbId));
 
         header('Location: ' . addSession('index.php'));
     } else if(isset($_FILES['filepond'])) {
@@ -389,8 +417,8 @@ foreach ($photoList as $row) {
                     if ($USER->instructor || $USER->id == $row["user_id"]) {
                         ?>
                         <div style="flex-grow: 1">
-                        <a href="photo-delete.php?id=<?=$id?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
-                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $row['photo_id'] ?>', '<?php echo $id ?>')"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
+                        <a href="photo-delete.php?id=<?=$id?>&thumb=<?=$thumbId?>"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>
+                        <a class="editPhoto" onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $row['photo_id'] ?>', '<?php echo $id ?>', '<?php echo $thumbId ?>')"><span class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
                         </div>
                     <?php
                     }
@@ -517,7 +545,7 @@ $OUTPUT->footerStart();
             document.getElementById('captionEdit3' + id).style.display = "none";
         }
 
-        function editPhoto(src, id, blob) {
+        function editPhoto(src, id, blob, thumb) {
             let img = new Image();
             img.src = src;
             const pond = FilePond.create({
@@ -528,7 +556,7 @@ $OUTPUT->footerStart();
                     outputStripImageHead: false
                 }),
                 server: {
-                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id + '&blob=' + blob
+                    url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id + '&blob=' + blob + "&thumb=" + thumb
                 }
             });
             pond.addFile(src);
