@@ -119,30 +119,30 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ( $safety1 !== true ) {
             $_SESSION['error'] = "Error: ".$safety1;
             error_log("Upload Error: ".$safety1);
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $safety2 = BlobUtil::validateUpload($fbes);
         if ( $safety2 !== true ) {
             $_SESSION['error'] = "Error: ".$safety2;
             error_log("Upload Error: ".$safety2);
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $thumb_id = BlobUtil::uploadToBlob($fbes);
         if ( $thumb_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET blob_id = :blobId, thumb_id = :thumbId where photo_id = :photoId");
@@ -161,7 +161,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $deleteBlobST = $PDOX->prepare("DELETE FROM {$p}blob_file where file_id = :fileId");
         $deleteBlobST->execute(array(":fileId" => $deleteThumbId));
 
-//        header('Location: ' . addSession('index.php'));
+        header('Location: ' . addSession('index.php'));
     } else if(isset($_FILES['filepond'])) {
         $fdes = $_FILES['filepond'];
 
@@ -188,30 +188,30 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ( $safety1 !== true ) {
             $_SESSION['error'] = "Error: ".$safety1;
             error_log("Upload Error: ".$safety1);
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $blob_id = BlobUtil::uploadToBlob($fdes);
         if ( $blob_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$filename;
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $safety2 = BlobUtil::validateUpload($fbes);
         if ( $safety2 !== true ) {
             $_SESSION['error'] = "Error: ".$safety2;
             error_log("Upload Error: ".$safety2);
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $thumb_id = BlobUtil::uploadToBlob($fbes);
         if ( $thumb_id === false ) {
             $_SESSION['error'] = 'Problem storing file in server: '.$thumbname;
-//            header( 'Location: '.addSession('index.php') ) ;
-//            return;
+            header( 'Location: '.addSession('index.php') ) ;
+            return;
         }
 
         $description = "";
@@ -226,8 +226,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $newStmt->execute(array(":userId" => $USER->id, ":description" => $description, ":blobId" => $blob_id, ":thumbId" => $thumb_id, ":approved" => $approved));
 
         $_SESSION['success'] = 'Photo added successfully.';
-//        header( 'Location: '.addSession('index.php') ) ;
-//        return;
+        header( 'Location: '.addSession('index.php') ) ;
+        return;
     }
 }
 
