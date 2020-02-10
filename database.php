@@ -12,7 +12,7 @@ $DATABASE_INSTALL = array(
     user_id     INTEGER NOT NULL,
     description TEXT NULL,
     blob_id     INTEGER NOT NULL,
-    thumb_id    INTEGER NOT NULL,
+    thumb_id    INTEGER NULL,
     approved    BOOL DEFAULT 0,
     
     PRIMARY KEY(photo_id)
@@ -25,3 +25,16 @@ $DATABASE_INSTALL = array(
     PRIMARY KEY(link_id)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8")
 );
+
+$DATABASE_UPGRADE = function($oldversion) {
+    global $CFG, $PDOX;
+
+    if ( ! $PDOX->columnExists('thumb_id', "{$CFG->dbprefix}photo_gallery") ) {
+        $sql= "ALTER TABLE {$CFG->dbprefix}photo_gallery ADD thumb_id INTEGER NULL";
+        echo("Upgrading: ".$sql."<br/>\n");
+        error_log("Upgrading: ".$sql);
+        $q = $PDOX->queryDie($sql);
+    }
+
+    return 202002101610;
+};
