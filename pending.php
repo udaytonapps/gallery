@@ -79,10 +79,6 @@ $OUTPUT->header();
             text-align: center;
         }
 
-        .photo-box {
-            margin-top: 50px;
-        }
-
         .magnify {
             cursor: pointer;
             font-size: 20px;
@@ -90,6 +86,10 @@ $OUTPUT->header();
 
         .approve-btn {
             margin-left: 20px;
+        }
+
+        .nav-spacing {
+            margin-top: 50px;
         }
     </style>
 <?php
@@ -104,16 +104,18 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo Gallery</a>
+                <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo
+                    Gallery</a>
             </div>
         </div>
     </nav>
 
 <?php $OUTPUT->flashMessages(); ?>
 
-    <div class="container-fluid">
+    <div class="container-fluid nav-spacing">
     <h3 class="pending-title">Photos Pending Approval</h3>
-    <p>Click on the photo to view a larger version and use the check mark button to approve the photo or the delete button to delete it.</p>
+    <p>Click on the photo to view a larger version and use the check mark button to approve the photo or the delete
+        button to delete it.</p>
     <div id="gallery">
 
         <?php
@@ -165,33 +167,34 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4>Photo added by ' . $name["displayname"] . '<br /><small>' . $formattedDate . '</small></h4>
                     <div style="display:flex">';
-                if ($USER->instructor) {
-                    ?>
-                    <div style="flex-grow: 1">
-                        <a href="photo-delete.php?id=<?= $id ?>&thumb=<?= $thumbId ?>"><span class="fa fa-trash"
-                                                                                             aria-hidden="true"></span>
-                            Delete Photo</a>
-                        <a href="photo-approve.php?photo_id=<?php echo $row["photo_id"]?>" class="approve-btn"><span class="fa fa-check" aria-hidden="true"></span> Approve Photo</a>
-                    </div>
-                    <?php
-                }
+            if ($USER->instructor) {
                 ?>
-                <ul class="pager" style="margin: 0;">
-                    <li><a href="#" data-dismiss="modal" onclick="gotoprev(<?= $count ?>)">Previous</a></li>
-                    <li><a href="#" data-dismiss="modal" onclick="gotonext(<?= $count ?>)">Next</a></li>
-                </ul>
+                <div style="flex-grow: 1">
+                    <a href="photo-delete.php?id=<?= $id ?>&thumb=<?= $thumbId ?>"><span class="fa fa-trash"
+                                                                                         aria-hidden="true"></span>
+                        Delete Photo</a>
+                    <a href="photo-approve.php?photo_id=<?php echo $row["photo_id"] ?>" class="approve-btn"><span
+                                class="fa fa-check" aria-hidden="true"></span> Approve Photo</a>
+                </div>
                 <?php
-                echo '
+            }
+            ?>
+            <ul class="pager" style="margin: 0;">
+                <li><a href="#" data-dismiss="modal" onclick="gotoprev(<?= $count ?>)">Previous</a></li>
+                <li><a href="#" data-dismiss="modal" onclick="gotonext(<?= $count ?>)">Next</a></li>
+            </ul>
+            <?php
+            echo '
                     </div>
                 </div>
                 <div class="modal-body">';
-                ?>
-                <div class="image-container2">
-                    <a class="magnify" onclick="window.open('<?= addSession($serve) ?>', '_blank');"><img
-                                class="image-large" src="<?= addSession($serve) ?>"></a>
-                </div>
-                <?php
-                echo '</div>
+            ?>
+            <div class="image-container2">
+                <a class="magnify" onclick="window.open('<?= addSession($serve) ?>', '_blank');"><img
+                            class="image-large" src="<?= addSession($serve) ?>"></a>
+            </div>
+            <?php
+            echo '</div>
                 </div>
             </div>
           </div>';
@@ -199,7 +202,7 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
         }
         echo("</div>\n");
 
-        if ( $count == 0 ) echo "<p><em>No photos are pending approval.</em></p>\n";
+        if ($count == 0) echo "<p><em>No photos are pending approval.</em></p>\n";
 
         ?>
     </div> <!-- Ending Container -->
@@ -212,10 +215,11 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
             var links = document.getElementsByClassName("image-link");
             current_index--;
             if (current_index < 0) {
-                current_index = links.length -1;
+                current_index = links.length - 1;
             }
             links[current_index].click();
         }
+
         function gotonext(current_index) {
             var links = document.getElementsByClassName("image-link");
             current_index++;

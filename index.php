@@ -337,8 +337,8 @@ $OUTPUT->header();
         .switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 30px;
+            height: 17px;
         }
 
         .switch input {
@@ -362,10 +362,10 @@ $OUTPUT->header();
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
+            height: 13px;
+            width: 13px;
+            left: 2px;
+            bottom: 2px;
             background-color: white;
             -webkit-transition: .4s;
             transition: .4s;
@@ -380,14 +380,14 @@ $OUTPUT->header();
         }
 
         input:checked + .slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
+            -webkit-transform: translateX(13px);
+            -ms-transform: translateX(13px);
+            transform: translateX(13px);
         }
 
         /* Rounded sliders */
         .slider.round {
-            border-radius: 34px;
+            border-radius: 17px;
         }
 
         .slider.round:before {
@@ -395,7 +395,7 @@ $OUTPUT->header();
         }
 
         .req-approve {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             text-wrap: none;
         }
@@ -666,6 +666,8 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                 data: {
                     approve: 0
                 }
+            }).then(() => {
+                location.reload();
             });
         });
 
