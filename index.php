@@ -89,10 +89,22 @@ function createThumbnail($src, $dest, $targetWidth, $targetHeight = null)
 $requireApproval = 0;
 if ($settings) {
     $requireApproval = $settings["approval"];
+} else {
+    $newStmt = $PDOX->prepare("INSERT INTO {$p}gallery_main (link_id, approval) values (:linkId, :approval)");
+    $newStmt->execute(array(":linkId" => $LINK->id, ":approval" => 0));
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['captionText'])) {
+    if (isset($_POST['approve'])) {
+        var_dump($_POST);
+        $approveBool = ($settings["approval"] == 0) ? 1 : 0;
+        var_dump($approveBool);
+        $editStmt = $PDOX->prepare("UPDATE {$p}gallery_main SET approval = :approval where link_id = :linkId");
+        $editStmt->execute(array(
+            ":approval" => $approveBool,
+            ":linkId" => $LINK->id
+        ));
+    } else if (isset($_POST['captionText'])) {
         $editStmt = $PDOX->prepare("UPDATE {$p}photo_gallery SET description = :description where blob_id = :blobId");
         $editStmt->execute(array(
             ":description" => $_POST['captionText'],
@@ -321,6 +333,72 @@ $OUTPUT->header();
         [class ^= filepond--drop-label] {
             cursor: pointer;
         }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .req-approve {
+            font-size: 16px;
+            font-weight: bold;
+            text-wrap: none;
+        }
     </style>
 <?php
 $OUTPUT->bodyStart();
@@ -352,17 +430,50 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
 
     <nav class="navbar navbar-default">
         <div class="container-fluid">
-            <div class="navbar-header">
-                <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo
-                    Gallery</a>
-            </div>
-            <ul class="nav navbar-nav">
+            <div class="row">
+                <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9">
+                    <div class="navbar-header">
+                        <a class="navbar-brand" href="index.php"><span class="fa fa-photo-o" aria-hidden="true"></span> Photo
+                            Gallery</a>
+                    </div>
+                    <ul class="nav navbar-nav">
+                        <?php
+                        if ($requireApproval && $USER->instructor) {
+                            echo '<li><a href="pending.php">Pending Photos <span class="label label-danger">' . $countPending . '</span></a></li>';
+                        }
+                        ?>
+                    </ul>
+                </div>
                 <?php
-                if ($requireApproval && $USER->instructor) {
-                    echo '<li><a href="pending.php">Pending Photos <span class="label label-danger">' . $countPending . '</span></a></li>';
+                if($USER->instructor) {
+                    if($requireApproval) {
+                        ?>
+                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <span>
+                            <span class="req-approve">Require Approval</span>
+                            <label class="switch">
+                                <input type="checkbox" id="approve-toggle" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                        </div>
+                        <?php
+                    } else {
+                        ?>
+                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                    <span>
+                        <span class="req-approve">Require Approval</span>
+                        <label class="switch">
+                            <input type="checkbox" id="approve-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </span>
+                        </div>
+                        <?php
+                    }
                 }
                 ?>
-            </ul>
+            </div>
         </div>
     </nav>
 
@@ -398,7 +509,7 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                 $serve = BlobUtil::getAccessUrlForBlob($id);
                 $thumb = BlobUtil::getAccessUrlForBlob($thumbId);
 
-                if ($requireApproval && $photoInfo["approved"] == "0") {
+                if ($requireApproval && $row["approved"] == "0") {
                     continue;
                 }
 
@@ -548,6 +659,16 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
     $OUTPUT->footerStart();
     ?>
     <script type="text/javascript">
+        $("#approve-toggle").change(function() {
+            $.ajax({
+                type: 'POST',
+                url: 'index.php?PHPSESSID=<?php echo session_id() ?>',
+                data: {
+                    approve: 0
+                }
+            });
+        });
+
         function gotoprev(current_index) {
             let links = document.getElementsByClassName("image-link");
             current_index--;

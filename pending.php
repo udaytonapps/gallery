@@ -23,29 +23,73 @@ $OUTPUT->header();
             display: -webkit-box;
             display: flex;
         }
+
         .gallery-column {
-            -webkit-box-flex: auto;
+            -webkit-box-flex: inherit;
             -ms-flex: auto;
-            flex: auto;
             width: 200px;
             margin: .5vw;
         }
+
         .gallery-image {
             width: 100%;
-            height: auto;
-            border: 1px solid #ccc;
+            height: 100%;
+            object-fit: scale-down;
+            vertical-align: bottom;
         }
+
         .gallery-image:hover {
-            -webkit-box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
-            box-shadow: 0 5px 11px 0 rgba(0,0,0,.18), 0 4px 15px 0 rgba(0,0,0,.15);
-            border: 1px solid #999;
+            -webkit-box-shadow: 0 5px 11px 0 rgba(0, 0, 0, .18), 0 4px 15px 0 rgba(0, 0, 0, .15);
+            box-shadow: 0 5px 11px 0 rgba(0, 0, 0, .18), 0 4px 15px 0 rgba(0, 0, 0, .15);
         }
+
         .image-large {
-            width: 100%;
+            max-height: 500px;
+            max-width: 100%;
+            width: auto;
             height: auto;
         }
-        .pending-title {
-            margin-top: 0;
+
+        .editPhoto {
+            margin-left: 2%;
+            cursor: pointer;
+        }
+
+        .addCaption {
+            cursor: pointer;
+        }
+
+        .caption {
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .captionText {
+            margin-bottom: 10px;
+            max-width: 100%;
+        }
+
+        .image-container {
+            width: 200px;
+            height: 200px;
+        }
+
+        .image-container2 {
+            text-align: center;
+        }
+
+        .photo-box {
+            margin-top: 50px;
+        }
+
+        .magnify {
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .approve-btn {
+            margin-left: 20px;
         }
     </style>
 <?php
@@ -74,18 +118,24 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
 
         <?php
         $count = 0;
-        while ( $row = $sortedPhotos->fetch(PDO::FETCH_ASSOC) ) {
-            $id = $row['file_id'];
-            $fn = $row['file_name'];
-            $date = $row['created_at'];
+        $infostmt = $PDOX->prepare("SELECT * FROM {$p}photo_gallery ORDER BY photo_id desc");
+        $infostmt->execute();
+        $photoList = $infostmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($photoList as $row) {
+            $id = $row['blob_id'];
+            $thumbId = isset($row['thumb_id']) ? $row['thumb_id'] : $row['blob_id'];
+            $photoInfostmt = $PDOX->prepare("SELECT file_name, created_at FROM {$p}blob_file
+        WHERE file_id = :fileId AND link_id = :LI");
+            $photoInfostmt->execute(array(":fileId" => $id, ":LI" => $LINK->id));
+            $photoInfo = $photoInfostmt->fetch(PDO::FETCH_ASSOC);
+
+            $fn = $photoInfo['file_name'];
+            $date = $photoInfo['created_at'];
 
             $serve = BlobUtil::getAccessUrlForBlob($id);
+            $thumb = BlobUtil::getAccessUrlForBlob($thumbId);
 
-            $infostmt = $PDOX->prepare("SELECT photo_id, user_id, description, approved FROM {$p}photo_gallery WHERE blob_id = :blobId");
-            $infostmt->execute(array(":blobId" => $id));
-            $photoInfo = $infostmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($photoInfo["approved"] == "1") {
+            if ($row["approved"] == "1") {
                 continue;
             }
 
@@ -93,35 +143,55 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
             $formattedDate = $photoDate->format("m-d-y") . " at " . $photoDate->format("h:i A");
 
             $namestmt = $PDOX->prepare("SELECT displayname FROM {$p}lti_user WHERE user_id = :user_id;");
-            $namestmt->execute(array(":user_id" => $photoInfo["user_id"]));
+            $namestmt->execute(array(":user_id" => $row["user_id"]));
             $name = $namestmt->fetch(PDO::FETCH_ASSOC);
 
-            echo '<div class="gallery-column">
-            <a href="javascript:void(0);" role="button" data-toggle="modal" data-target="#image'.$id.'" class="image-link">
-                <img class="gallery-image" src="'.addSession($serve).'">
-            </a>
-          </div>
-          <div id="image'.$id.'" class="modal fade" role="dialog">
+            ?>
+            <div class="gallery-column">
+                <a href="#" role="button" data-toggle="modal" data-target="#image<?= $id ?>" class="image-link">
+                    <div class="image-container">
+                        <img class="gallery-image" src="<?= addSession($thumb) ?>">
+                    </div>
+
+                </a>
+            </div>
+            <?php
+            echo '
+          <div id="image' . $id . '" class="modal" role="dialog">
             <div class="modal-dialog modal-lg">
-                <!-- Modal content-->
+            <!-- Modal content-->
                 <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4>Photo added by '.$name["displayname"].'<br /><small>'.$formattedDate.'</small></h4>
-                    <a href="photo-approve.php?photo_id='.$photoInfo["photo_id"].'" class="btn btn-success pull-right"><span class="fa fa-check" aria-hidden="true"></span> Approve Photo</a>';
-            if ($USER->instructor || $USER->id == $photoInfo["user_id"]) {
-                echo '<a href="photo-delete.php?id='.$id.'"><span class="fa fa-trash" aria-hidden="true"></span> Delete Photo</a>';
-            }
-            echo '
+                    <h4>Photo added by ' . $name["displayname"] . '<br /><small>' . $formattedDate . '</small></h4>
+                    <div style="display:flex">';
+                if ($USER->instructor) {
+                    ?>
+                    <div style="flex-grow: 1">
+                        <a href="photo-delete.php?id=<?= $id ?>&thumb=<?= $thumbId ?>"><span class="fa fa-trash"
+                                                                                             aria-hidden="true"></span>
+                            Delete Photo</a>
+                        <a href="photo-approve.php?photo_id=<?php echo $row["photo_id"]?>" class="approve-btn"><span class="fa fa-check" aria-hidden="true"></span> Approve Photo</a>
+                    </div>
+                    <?php
+                }
+                ?>
+                <ul class="pager" style="margin: 0;">
+                    <li><a href="#" data-dismiss="modal" onclick="gotoprev(<?= $count ?>)">Previous</a></li>
+                    <li><a href="#" data-dismiss="modal" onclick="gotonext(<?= $count ?>)">Next</a></li>
+                </ul>
+                <?php
+                echo '
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <p>'.$photoInfo["description"].'</p>
-                    <img class="image-large" src="'.addSession($serve).'">
-                    <ul class="pager">
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotoprev('.$count.');">Previous</a></li>
-                        <li><a href="javascript:void(0);" data-dismiss="modal" onclick="gotonext('.$count.');">Next</a></li>
-                    </ul>
+                <div class="modal-body">';
+                ?>
+                <div class="image-container2">
+                    <a class="magnify" onclick="window.open('<?= addSession($serve) ?>', '_blank');"><img
+                                class="image-large" src="<?= addSession($serve) ?>"></a>
                 </div>
+                <?php
+                echo '</div>
                 </div>
             </div>
           </div>';
