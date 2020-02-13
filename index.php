@@ -339,7 +339,7 @@ $OUTPUT->header();
             display: inline-block;
             width: 30px;
             height: 17px;
-            margin-top: 5px;
+            margin-top: 14px;
         }
 
         .switch input {
@@ -397,9 +397,14 @@ $OUTPUT->header();
 
         .req-approve {
             font-size: 14px;
+            color: var(--text-light);
             font-weight: bold;
             text-wrap: none;
             vertical-align: top;
+            line-height: 50px;
+        }
+        .req-approve:hover {
+            cursor: pointer;
         }
         .disabledbutton {
             pointer-events: none;
@@ -468,7 +473,7 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                     <ul class="nav navbar-nav">
                         <?php
                         if ($requireApproval && $USER->instructor) {
-                            echo '<li><a href="pending.php">Pending Photos <span class="label label-danger">' . $countPending . '</span></a></li>';
+                            echo '<li><a href="pending.php"><span class="badge pull-right" style="margin-left:4px;">' . $countPending . '</span>Pending Photos</a></li>';
                         }
                         ?>
                     </ul>
@@ -477,8 +482,8 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                 if($USER->instructor) {
                     if($requireApproval) {
                         ?>
-                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
-                            <span class="req-approve">Require Approval</span>
+                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3 text-right"">
+                            <label for="approve-toggle" class="req-approve">Moderate student uploads</label>
                             <label class="switch">
                                 <input type="checkbox" id="approve-toggle" checked>
                                 <span class="slider round"></span>
@@ -487,9 +492,9 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                         <?php
                     } else {
                         ?>
-                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3 text-right">
                     <span>
-                        <span class="req-approve">Require Approval</span>
+                        <label for="approve-toggle" class="req-approve">Moderate student uploads</label>
                         <label class="switch">
                             <input type="checkbox" id="approve-toggle">
                             <span class="slider round"></span>
