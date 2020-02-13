@@ -339,6 +339,7 @@ $OUTPUT->header();
             display: inline-block;
             width: 30px;
             height: 17px;
+            margin-top: 5px;
         }
 
         .switch input {
@@ -398,6 +399,34 @@ $OUTPUT->header();
             font-size: 14px;
             font-weight: bold;
             text-wrap: none;
+            vertical-align: top;
+        }
+        .disabledbutton {
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        .loader {
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            margin-left: 43%;
+            margin-top: 35%;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loader-cont {
+            height: 100%;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            vertical-align: center;
+            justify-items: center;
         }
     </style>
 <?php
@@ -449,13 +478,11 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                     if($requireApproval) {
                         ?>
                         <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
-                        <span>
                             <span class="req-approve">Require Approval</span>
                             <label class="switch">
                                 <input type="checkbox" id="approve-toggle" checked>
                                 <span class="slider round"></span>
                             </label>
-                        </span>
                         </div>
                         <?php
                     } else {
@@ -478,8 +505,17 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
     </nav>
 
 <?php $OUTPUT->flashMessages(); ?>
-
-    <div class="container-fluid">
+    <a id="loader-toggle" href="#" role="button" data-toggle="modal" data-target="#loader-modal" hidden></a>
+<?php
+echo('<div id="loader-modal" class="modal" role="img">
+            <button type="button" class="close" id="loader-modal-close" data-dismiss="modal" hidden></button>
+            <div class="loader-cont">
+                <div class="loader" id="loader"></div>
+            </div>
+        
+    </div>')
+?>
+    <div class="container-fluid" id="main-gallery">
     <div class="photo-box">
         <input type="file" class="filepond" name="filepond[]" multiple data-max-file-size="6MB">
     </div>
@@ -525,7 +561,6 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                         <div class="image-container">
                             <img class="gallery-image" src="<?= addSession($thumb) ?>">
                         </div>
-
                     </a>
                 </div>
                 <?php
@@ -760,6 +795,10 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
             });
         }
 
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         function editPhoto(src, id, blob, thumb) {
             let img = new Image();
             img.src = src;
@@ -768,13 +807,24 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
                 instantUpload: true,
                 imageEditEditor: Doka.create({
                     cropResizeScrollRectOnly: true,
-                    outputStripImageHead: false
+                    outputStripImageHead: false,
+                    labelButtonConfirm: 'Save',
+                    oncancel: () => {
+                        $("#main-gallery").removeClass("disabledbutton");
+                        $("#loader-modal-close").click();
+            }
                 }),
                 server: {
                     url: 'index.php?PHPSESSID=<?php echo session_id() ?>&id=' + id + '&blob=' + blob + "&thumb=" + thumb
                 }
             });
             pond.addFile(src);
+            pond.onaddfilestart = (files) => {
+                sleep(2000).then(() => {
+                    $("#main-gallery").addClass("disabledbutton");
+                    $("#loader-toggle").click();
+                });
+            };
             pond.onprocessfile = (files) => {
                 window.location.href = 'index.php?PHPSESSID=<?php echo session_id() ?>';
             }
@@ -795,7 +845,8 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
             labelStatusAwaitingImage: 'Waiting for image…',
             labelStatusLoadImageError: 'Error loading image…',
             labelStatusLoadingImage: 'Loading image…',
-            labelStatusProcessingImage: 'Processing image…'
+            labelStatusProcessingImage: 'Processing image…',
+            labelButtonConfirm: 'Save'
         });
 
         let pond = FilePond.create(document.querySelector('.filepond'), {
