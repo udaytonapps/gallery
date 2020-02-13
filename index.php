@@ -859,17 +859,16 @@ echo('<div id="loader-modal" class="modal" role="img">
             server: {
                 url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
             },
-            onaddfilestart: (files) => {
-                isMultipleFiles();
-            },
             onprocessfile: (files) => {
                 isLoadingCheck();
+            },
+            onaddfilestart: async (files) => {
+                await isMultipleFiles();
             }
         });
 
         function isMultipleFiles() {
             let isMultiple = pond.getFiles().length > 1;
-            console.log(isMultiple);
             pond.setOptions({
                 imageEditInstantEdit: !isMultiple
             })
