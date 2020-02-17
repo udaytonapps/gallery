@@ -1,10 +1,8 @@
 <?php
 require_once "../config.php";
 
-use \Tsugi\Util\LTI;
-use \Tsugi\UI\Output;
-use \Tsugi\Core\LTIX;
-use \Tsugi\Blob\BlobUtil;
+use Tsugi\Blob\BlobUtil;
+use Tsugi\Core\LTIX;
 
 $p = $CFG->dbprefix;
 
@@ -577,28 +575,28 @@ echo('<div id="loader-modal" class="modal" role="img">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4>Photo added by ' . $name["displayname"] . '<br /><small>' . $formattedDate . '</small></h4>
-                    <div style="display:flex">';
+                    <div style="display:flex">
+                    <div style="flex-grow: 1">';
                 if ($USER->instructor || $USER->id == $row["user_id"]) {
                     ?>
-                    <div style="flex-grow: 1">
-                        <a href="photo-delete.php?id=<?= $id ?>&thumb=<?= $thumbId ?>"><span class="fa fa-trash"
-                                                                                             aria-hidden="true"></span>
-                            Delete Photo</a>
-                        <a class="editPhoto"
-                           onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $row['photo_id'] ?>', '<?php echo $id ?>', '<?php echo $thumbId ?>')"><span
-                                    class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
-                    </div>
+                    <a href="photo-delete.php?id=<?= $id ?>&thumb=<?= $thumbId ?>"><span class="fa fa-trash"
+                                                                                         aria-hidden="true"></span>
+                        Delete Photo</a>
+                    <a class="editPhoto"
+                       onclick="editPhoto('<?php echo addSession($serve) ?>', '<?php echo $row['photo_id'] ?>', '<?php echo $id ?>', '<?php echo $thumbId ?>')"><span
+                                class="fa fa-edit" aria-hidden="true"></span> Edit Photo</a>
                     <?php
                 }
                 ?>
+                </div>
                 <ul class="pager" style="margin: 0;">
                     <li><a href="#" data-dismiss="modal" onclick="gotoprev(<?= $count ?>)">Previous</a></li>
                     <li><a href="#" data-dismiss="modal" onclick="gotonext(<?= $count ?>)">Next</a></li>
                 </ul>
                 <?php
                 echo '
-                    </div>
-                </div>
+                    </div> <!-- End flex -->
+                </div> <!-- End modal header -->
                 <div class="modal-body">';
                 if ($row["description"] != NULL) {
                     if ($USER->instructor || $USER->id == $row["user_id"]) {
