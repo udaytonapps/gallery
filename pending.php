@@ -113,7 +113,7 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
 <?php $OUTPUT->flashMessages(); ?>
 
     <div class="container-fluid nav-spacing">
-    <h3 class="pending-title">Photos Pending Approval</h3>
+    <h3 class="pending-title">Photos Pending Approval <br /><small><a href="index.php"><span class="fa fa-chevron-left" aria-hidden="true"></span> Back</a></small></h3>
     <p>Click on the photo to view a larger version and use the check mark button to approve the photo or the delete
         button to delete it.</p>
     <div id="gallery">
