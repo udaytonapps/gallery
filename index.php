@@ -537,8 +537,7 @@ echo('<div id="loader-modal" class="modal" role="img">
         foreach ($photoList as $row) {
             $id = $row['blob_id'];
             $thumbId = isset($row['thumb_id']) ? $row['thumb_id'] : $row['blob_id'];
-            $photoInfostmt = $PDOX->prepare("SELECT file_name, created_at FROM {$p}blob_file
-        WHERE file_id = :fileId AND link_id = :LI");
+            $photoInfostmt = $PDOX->prepare("SELECT file_name, created_at FROM {$p}blob_file WHERE file_id = :fileId AND link_id = :LI");
             $photoInfostmt->execute(array(":fileId" => $id, ":LI" => $LINK->id));
             $photoInfo = $photoInfostmt->fetch(PDO::FETCH_ASSOC);
             if ($photoInfo) {
@@ -681,8 +680,8 @@ echo('<div id="loader-modal" class="modal" role="img">
                 </div>
             </div>
           </div>';
+                $count++; // Only count photos in this gallery
             }
-            $count++;
         }
 
 
