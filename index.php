@@ -859,23 +859,14 @@ echo('<div id="loader-modal" class="modal" role="img">
             maxFiles: 20,
             labelIdle: '<span class="filepond-main-label">Drag & Drop Your Photos or Click to Browse</span>',
             imageEditEditor: Doka.create(),
+            imageEditInstantEdit: true,
             server: {
                 url: 'index.php?PHPSESSID=<?php echo session_id() ?>'
             },
             onprocessfile: (files) => {
                 isLoadingCheck();
-            },
-            onaddfilestart: async (files) => {
-                await isMultipleFiles();
             }
         });
-
-        function isMultipleFiles() {
-            let isMultiple = pond.getFiles().length > 1;
-            pond.setOptions({
-                imageEditInstantEdit: !isMultiple
-            })
-        }
 
         function isLoadingCheck() {
             let isLoading1 = pond.getFiles().filter(x => x.status !== 5).length !== 0;
