@@ -7,6 +7,7 @@ use \Tsugi\Core\LTIX;
 $LAUNCH = LTIX::requireData();
 
 $id = $_REQUEST['id'];
+$thumb_id = $_REQUEST['thumb'];
 if ( strlen($id) < 1 ) {
     die("File not found");
 }
@@ -27,6 +28,10 @@ if ( isset($_POST["doDelete"]) ) {
     $stmt = $PDOX->prepare("DELETE FROM {$p}blob_file
             WHERE file_id = :ID AND context_id = :CID");
     $stmt->execute(array(":ID" => $id, ":CID" => $CONTEXT->id));
+
+    $stmt = $PDOX->prepare("DELETE FROM {$p}blob_file
+            WHERE file_id = :ID AND context_id = :CID");
+    $stmt->execute(array(":ID" => $thumb_id, ":CID" => $CONTEXT->id));
 
     $infostmt = $PDOX->prepare("DELETE FROM {$p}photo_gallery where blob_id = :blobId");
     $infostmt->execute(array(":blobId" => $id));
