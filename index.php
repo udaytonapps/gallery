@@ -243,6 +243,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // View
 $OUTPUT->header();
 ?>
+    <!-- Doka styles -->
+    <link href="doka_6.4.0/bin/browser/doka.min.css" rel="stylesheet">
+    <!-- Filepond styles -->
+    <link href="filepond-master/dist/filepond.min.css" rel="stylesheet">
+    <link href="filepond-master/plugins/filepond-plugin-file-poster-master/dist/filepond-plugin-file-poster.min.css" rel="stylesheet">
+    <link href="filepond-master/plugins/filepond-plugin-image-edit-master/dist/filepond-plugin-image-edit.min.css" rel="stylesheet">
+    <link href="filepond-master/plugins/filepond-plugin-image-preview-master/dist/filepond-plugin-image-preview.min.css" rel="stylesheet">
     <style type="text/css">
         #gallery {
             padding: .5vw;
@@ -694,6 +701,22 @@ echo('<div id="loader-modal" class="modal" role="img">
 
     <?php
     $OUTPUT->footerStart();
+echo('<script src="filepond-master/dist/filepond.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-encode-master/dist/filepond-plugin-file-encode.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-metadata-master/dist/filepond-plugin-file-metadata.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-poster-master/dist/filepond-plugin-file-poster.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-rename-master/dist/filepond-plugin-file-rename.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-validate-size-master/dist/filepond-plugin-file-validate-size.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-file-validate-type-master/dist/filepond-plugin-file-validate-type.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-crop-master/dist/filepond-plugin-image-crop.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-edit-master/dist/filepond-plugin-image-edit.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-exif-orientation-master/dist/filepond-plugin-image-exif-orientation.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-filter-master/dist/filepond-plugin-image-filter.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-preview-master/dist/filepond-plugin-image-preview.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-resize-master/dist/filepond-plugin-image-resize.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-transform-master/dist/filepond-plugin-image-transform.min.js"></script>'."\n");
+echo('<script src="filepond-master/plugins/filepond-plugin-image-validate-size-master/dist/filepond-plugin-image-validate-size.min.js"></script>'."\n");
+echo('<script src="doka_6.4.0/bin/browser/doka.min.js"></script>'."\n");
     ?>
     <script type="text/javascript">
         $("#approve-toggle").change(function() {
