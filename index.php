@@ -451,11 +451,13 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
     $approvedStmt->execute(array(":blobId" => $photo["file_id"], ":approved" => 0));
     $approveInfo = $approvedStmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($approveInfo["approved"] == "0") {
-        $countPending++;
-    }
-    if ($approveInfo["user_id"] == $USER->id) {
-        $currentUserPendingCount++;
+    if ($approveInfo) {
+        if ($approveInfo["approved"] == "0") {
+            $countPending++;
+        }
+        if ($approveInfo["user_id"] == $USER->id) {
+            $currentUserPendingCount++;
+        }
     }
 }
 ?>
