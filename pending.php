@@ -91,6 +91,9 @@ $OUTPUT->header();
         .nav-spacing {
             margin-top: 50px;
         }
+        .pager li a {
+            color: black;
+        }
     </style>
 <?php
 $OUTPUT->bodyStart();
