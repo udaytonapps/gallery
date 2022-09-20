@@ -353,7 +353,7 @@ $OUTPUT->header();
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
+            background-color: #333;
             -webkit-transition: .4s;
             transition: .4s;
         }
@@ -430,6 +430,9 @@ $OUTPUT->header();
             justify-content: center;
             vertical-align: center;
             justify-items: center;
+        }
+        .pager li a {
+            color: black;
         }
     </style>
 <?php
