@@ -395,7 +395,7 @@ $OUTPUT->header();
 
         .req-approve {
             font-size: 14px;
-            color: var(--text-light);
+            color: black;
             font-weight: bold;
             text-wrap: none;
             vertical-align: top;
