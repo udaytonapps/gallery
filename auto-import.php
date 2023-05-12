@@ -80,7 +80,6 @@ $autoInitialized = $LAUNCH->link->settingsGet("auto-initialized", false);
 if (!$autoInitialized) {
     // If auto-initialization hasn't occurred, import all associated data for that link
     $previousIds = LTIX::getLatestHistoryIds();
-    $previousIds = ['link_id' => 100];
     if ($previousIds) {
         $prevLinkId = $previousIds['link_id'];
         copyToolData($prevLinkId);
