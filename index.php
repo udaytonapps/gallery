@@ -1,6 +1,6 @@
 <?php
 require_once "../config.php";
-require "auto-import.php";
+require_once "auto-import.php";
 
 use Tsugi\Blob\BlobUtil;
 use Tsugi\Core\LTIX;
