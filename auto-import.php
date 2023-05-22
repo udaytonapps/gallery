@@ -46,7 +46,8 @@ function copyToolData($prevLinkId)
 /** Generic */
 function getSettingsByLinkId($link_id)
 {
-    global $p, $PDOX;
+    global $PDOX, $CFG;
+    $p = $CFG->dbprefix;
     $row = $PDOX->rowDie(
         "SELECT settings FROM {$p}lti_link WHERE link_id = :ID",
         array(":ID" => $link_id)
