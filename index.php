@@ -1,5 +1,6 @@
 <?php
 require_once "../config.php";
+require_once "auto-import.php";
 
 use Tsugi\Blob\BlobUtil;
 use Tsugi\Core\LTIX;
@@ -360,7 +361,7 @@ $OUTPUT->header();
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
+            background-color: #333;
             -webkit-transition: .4s;
             transition: .4s;
         }
@@ -402,7 +403,7 @@ $OUTPUT->header();
 
         .req-approve {
             font-size: 14px;
-            color: var(--text-light);
+            color: black;
             font-weight: bold;
             text-wrap: none;
             vertical-align: top;
@@ -438,6 +439,9 @@ $OUTPUT->header();
             vertical-align: center;
             justify-items: center;
         }
+        .pager li a {
+            color: black;
+        }
     </style>
 <?php
 $OUTPUT->bodyStart();
@@ -458,11 +462,13 @@ while ($photo = $allPhotos->fetch(PDO::FETCH_ASSOC)) {
     $approvedStmt->execute(array(":blobId" => $photo["file_id"], ":approved" => 0));
     $approveInfo = $approvedStmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($approveInfo["approved"] == "0") {
-        $countPending++;
-    }
-    if ($approveInfo["user_id"] == $USER->id) {
-        $currentUserPendingCount++;
+    if ($approveInfo) {
+        if ($approveInfo["approved"] == "0") {
+            $countPending++;
+        }
+        if ($approveInfo["user_id"] == $USER->id) {
+            $currentUserPendingCount++;
+        }
     }
 }
 ?>

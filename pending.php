@@ -91,6 +91,9 @@ $OUTPUT->header();
         .nav-spacing {
             margin-top: 50px;
         }
+        .pager li a {
+            color: black;
+        }
     </style>
 <?php
 $OUTPUT->bodyStart();
@@ -130,8 +133,11 @@ $sortedPhotos->execute(array(":LI" => $LINK->id));
             $photoInfostmt->execute(array(":fileId" => $id, ":LI" => $LINK->id));
             $photoInfo = $photoInfostmt->fetch(PDO::FETCH_ASSOC);
 
-            $fn = $photoInfo['file_name'];
-            $date = $photoInfo['created_at'];
+            // Need to add null check - per PHP 7.4+, $photoInfo may be false and errors on following lines
+            if (isset($photoInfo['file_name']) && isset($photoInfo['created_at'])) {
+                $fn = $photoInfo['file_name'];
+                $date = $photoInfo['created_at'];
+            }
 
             $serve = BlobUtil::getAccessUrlForBlob($id);
             $thumb = BlobUtil::getAccessUrlForBlob($thumbId);
